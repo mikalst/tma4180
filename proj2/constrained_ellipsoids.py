@@ -9,8 +9,19 @@ Created on Wed Feb 21 12:21:45 2018
 import numpy as np
 import numpy.random
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize as minimize
 
 import search_methods as sm
+
+
+def find_weights(zz, A, c):
+    w = np.zeros(len(zz), dtype = np.int)
+    for i, z in enumerate(zz):
+        if np.dot(z, A).dot(z) + c.dot(z) <= 1:
+            w[i] = 1
+        else:
+            w[i] = -1
+    return w
 
 
 def generate_points(num, dim=2):
@@ -213,8 +224,75 @@ def test2D(rand=False):
 #test2D(True)
 
 
+def testScipy():
+    nz = 500
+    N = 2
+    z, w = generate_points(nz, N)
+    
+    A = np.array([[1, -10], [-10, 1]])
+    c = np.array([.0, .0])
+    w = find_weights(z, A, c)
+    
+    x = np.random.rand(int(N*(N+1)/2 + N))
+    color = [['green', 0, 'red'][1-i] for i in w]
+    
+    f, g = setmodelzw(z, w, x)
+    
+    lambda_l = 4
+    lambda_h = 1E10
+    
+    constraint1 = {'type': 'ineq',
+                   'fun': lambda x: x[0] - lambda_l,
+                   'jac': lambda x: np.array([1, 0, 0, 0, 0])}
+    
+    constraint2 = {'type': 'ineq',
+                   'fun': lambda x: -x[0] + lambda_h,
+                   'jac': lambda x: np.array([-1, 0, 0, 0, 0])}
+    
+    constraint3 = {'type': 'ineq',
+                   'fun': lambda x: x[2] - lambda_l,
+                   'jac': lambda x: np.array([0, 0, 1, 0, 0])}
+    
+    constraint4 = {'type': 'ineq',
+                   'fun': lambda x: -x[2] + lambda_h,
+                   'jac': lambda x: np.array([0, 0, -1, 0, 0])}
+    
+    constraint5 = {'type': 'ineq',
+                   'fun': lambda x: np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5),
+                   'jac': lambda x: np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5),
+                                              -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
+                                              0.5*x[0]*np.power(x[0]*x[2], -0.5),
+                                              0,
+                                              0])}
+    
+    x0 = minimize(f, x, jac=g, method = 'SLSQP', constraints = [constraint1,
+                                                                constraint2,
+                                                                constraint3,
+                                                                constraint4,
+                                                                constraint5])
+    
+    x1 = minimize(f, x, jac=g, method = 'COBYLA', constraints = [constraint1,
+                                                                constraint2,
+                                                                constraint3,
+                                                                constraint4,
+                                                                constraint5])
+    
+    x2, it2, err2 = sm.bfgs(f, g, x)
+    
+    print(x0); print(x1)
+    
+    plt.scatter(z[:, 0], z[:, 1], c=color)
+    plot(x0.x, z, color, 'orange', 'SLSQP')
+    plot(x1.x, z, color, 'purple', 'COBYLA')
+    plot(x2, z, color, 'yellow', 'BFGS - Unconstrained')
+    
+    
+    
+    
+
 
 if __name__ == "__main__":
 #    test_grad()
-    test2D(True)
+    testScipy()
+#    test2D(True)
 
