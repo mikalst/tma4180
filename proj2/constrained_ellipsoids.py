@@ -287,7 +287,62 @@ def testScipy():
     plot(x2, z, color, 'yellow', 'BFGS - Unconstrained')
     
     
+def constraints(x, lambda_l, lambda_h):
+    constraint1 = {'type': 'ineq',
+                   'fun': lambda x: x[0] - lambda_l,
+                   'jac': lambda x: np.array([1, 0, 0, 0, 0])}
     
+    constraint2 = {'type': 'ineq',
+                   'fun': lambda x: -x[0] + lambda_h,
+                   'jac': lambda x: np.array([-1, 0, 0, 0, 0])}
+    
+    constraint3 = {'type': 'ineq',
+                   'fun': lambda x: x[2] - lambda_l,
+                   'jac': lambda x: np.array([0, 0, 1, 0, 0])}
+    
+    constraint4 = {'type': 'ineq',
+                   'fun': lambda x: -x[2] + lambda_h,
+                   'jac': lambda x: np.array([0, 0, -1, 0, 0])}
+    
+    constraint5 = {'type': 'ineq',
+                   'fun': lambda x: np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5),
+                   'jac': lambda x: np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5),
+                                              -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
+                                              0.5*x[0]*np.power(x[0]*x[2], -0.5),
+                                              0,
+                                              0])}
+    return [constraint1, constraint2, constraint3, constraint4, constraint5]
+  
+def P(x, mu, con, z, w, f):
+    P = f(z, w, x)
+    for i in range(len(con)):
+        if con[i]['type'] == 'ineq':
+            P += mu*con[i]['fun']
+    return P
+
+def grad_P(x, mu, con, z, w):
+    grad_P = jacobi(z, w, x)
+    for i in range(len(con)):
+        if con[i]['type'] == 'ineq':
+            grad_P -= mu*con[i]['jac']
+    return grad_P
+     
+def barrier(x0, mu0, f):
+    k = 1
+    x1 = x0 
+    mu = mu0
+    
+    lambda p: P(x, mu, con, z, w, f)
+    lambda g_p: grad_P(x, mu, con, z, w)
+    
+    while True:
+        x = bfgs(p, g_p, TOL = 1/k)
+        
+        # lagrange multipliers
+        z = 
+        
+        
+        
     
 
 
