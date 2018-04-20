@@ -9,55 +9,119 @@ Created on Thu Apr 19 11:00:38 2018
 import numpy as np
 from scipy.optimize import minimize
 
+CONSTRAINTS = 5
 
 def equality_constrained_qp(g, x_k, B_k, cf, cg, W_k):
+    """Solve the equality-constrained convex quadratic
+    programming problem. The equality constraints are specified by the working 
+    set W_k"""
+    
+    
+    g_k = g(x_k)
+    cf_k = cf(x_k)
+    cg_k = cg(x_k)
+    
+    
     W_full = set([0, 1, 2, 3, 4])
     if len(W_k) == 0: #Unconstrained
-        return np.linalg.solve(B_k, c)
+        return np.linalg.solve(B_k, -g_k), np.zeros((CONSTRAINTS,))
     
-    for i in W_full - W_k:
+    #Construct A and b to solve the EQ-system described by 16.3
+    A = np.zeros((len(W_k), CONSTRAINTS))
+    b = np.zeros((len(W_k), ))
+    for i in W_k:
+        print(A.shape)
+        A[i, :] = cg_k[i, :]
+        b[i] = cf_k[i]
+    
+    lhs = np.block([[B_k, -1*A.transpose()], [A, np.zeros((len(W_k), len(W_k)))]])
+    rhs = np.block([-g_k, b])
+    
+    bsol = np.linalg.solve(lhs, rhs)
+    
+    p_opt = bsol[:len(x_k)]
+    
+    #Set optimal lambda to 0 for all lambda not in the working set
+    l_opt = np.zeros((CONSTRAINTS, ))
+    for i in range(len(W_k)):
+        l_opt[W_k[i]] = bsol[i] 
         
+    print(p_opt.shape(), l_opt.shape)
     
-    block = np.block([G, -cf.transpose
+    return p_opt, l_opt
 
 
 def active_set_method_convex_qp(g, x_k, B_k, cf, cg):
-    qf = lambda x: np.dot(np.dot(x, B_k), x) + g.dot(x)
-    qg = lambda x: 2*np.dot(B_k, x) + g
+    """Solve the inequality-constrained convex quadratic programming problem by
+    iterating over several equality constrained convex QPs. As explained in Algorithm
+    16.3"""
+    g_k = g(x_k)
     
-    W_0 = set([])
+    qf = lambda x: np.dot(np.dot(x, B_k), x) + g_k.dot(x)
+    qg = lambda x: 2*np.dot(B_k, x) + g_k
     
-    while np.linalg.norm(qg, 2) > 1E-8:
+    W_t = set([0, 1, 2, 3, 4])
+    W_k = set([])
+    
+    while np.linalg.norm(qg(x_k), 2) > 1E-8:
+        print(np.linalg.norm(qg(x_k), 2))
+        p_k, l_k = equality_constrained_qp(g, x_k, B_k, cf, cg, W_k)
+        
+        if np.linalg.norm(p_k, 2) < 1E-8:
+            if not((l_k < 0).any):
+                return x_k + g(x_k).dot(p_k)
+            else:
+                j = np.argmin(l_k)
+                x_k = x_k
+                W_k = W_k - set([j])
+            
+        else:
+            restricting = []
+            qf_k = qf(x_k)
+            qg_k = qg(x_k)
+            for i in W_k:
+                if qg(x_k)[i].dot(p_k) < 0:
+                    restricting.append((qf_k[i] - qg_k[i].dot(x_k))/(qg_k[i].dot(p_k)))
+                    
+            if np.empty(restricting):
+                alpha_k = 1
+            else:
+                alpha_k = min(1, min(restricting))
+                
+            x_k = x_k + alpha_k * p_k
+            
+            blocking = np.argmin(qf(x_k))
+            
+            if cf(x_k)[blocking] < 0:
+                W_k.add(blocking)
+        
+    return x_k
         
     
-    lambda_l = 1E-3
-    lambda_h = 1E3
-    
-    constraint1 = {'type': 'ineq',
-                   'fun': lambda p: x_k[0] + p[0] - lambda_l}
-    
-    constraint2 = {'type': 'ineq',
-                   'fun': lambda p: lambda_h - (x_k[0] + p[0])}
-    
-    constraint3 = {'type': 'ineq',
-                   'fun': lambda p: (x_k[2]+p[2]) - lambda_l}
-    
-    constraint4 = {'type': 'ineq',
-                   'fun': lambda p: lambda_h - (x_k[2] + p[2])}
-    
-    constraint5 = {'type': 'ineq',
-                   'fun': lambda p: np.power((x_k[0]+p[0])*(x_k[2]+p[2]), 0.5) - np.power(lambda_l**2 + (x_k[1]+p[1])**2, 0.5)}
-        
-    x0 = minimize(q, x_k, constraints = [constraint1,
-                                         constraint2,
-                                         constraint3,
-                                         constraint4,
-                                         constraint5])
-
-    x = x0.x
-    
-    
-    return x0
+#    constraint1 = {'type': 'ineq',
+#                   'fun': lambda p: x_k[0] + p[0] - lambda_l}
+#    
+#    constraint2 = {'type': 'ineq',
+#                   'fun': lambda p: lambda_h - (x_k[0] + p[0])}
+#    
+#    constraint3 = {'type': 'ineq',
+#                   'fun': lambda p: (x_k[2]+p[2]) - lambda_l}
+#    
+#    constraint4 = {'type': 'ineq',
+#                   'fun': lambda p: lambda_h - (x_k[2] + p[2])}
+#    
+#    constraint5 = {'type': 'ineq',
+#                   'fun': lambda p: np.power((x_k[0]+p[0])*(x_k[2]+p[2]), 0.5) - np.power(lambda_l**2 + (x_k[1]+p[1])**2, 0.5)}
+#        
+#    x0 = minimize(q, x_k, constraints = [constraint1,
+#                                         constraint2,
+#                                         constraint3,
+#                                         constraint4,
+#                                         constraint5])
+#
+#    x = x0.x
+#    
+#    return x0
 
 def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     

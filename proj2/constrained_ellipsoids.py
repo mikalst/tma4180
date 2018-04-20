@@ -285,6 +285,7 @@ def testScipy():
         cg[:, 3] = np.array([0, 0, -1, 0, 0])
         cg[:, 4] = np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5), -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
                                               0.5*x[0]*np.power(x[0]*x[2], -0.5), 0, 0])
+        return cg
         
     
     x0 = minimize(f, x, jac=g, method = 'SLSQP', constraints = [constraint1,
