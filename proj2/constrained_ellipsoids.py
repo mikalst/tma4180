@@ -140,7 +140,7 @@ def constraint_grad(x):
     g = np.zeros((num_constraints, len(x)))
     A, c = xTm(x)
     g[0, :] = np.array([A[0, 0], 0, 0, 0, 0])
-    return
+    return 
 
 
 def setmodelzw(z, w, x):

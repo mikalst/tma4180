@@ -132,7 +132,7 @@ def bfgs(f, g, x, TOL = 1e-3):
     H_k =  I
 
     while True:
-        print(iterations)
+        if iterations%10==0: print(iterations)
         x0 = x_k
         g0 = g_k    
         p_k = - H_k@g_k

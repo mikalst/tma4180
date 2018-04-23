@@ -8,15 +8,12 @@ import search_methods as sm
 # every constraint is a inequality constraint
 
 def P(x, mu, con, f):
-    P = f(x)
-    for i in range(len(con)):
-        P -= mu*np.log(con[i])
+    P = f(x) - mu*sum(np.log(con))
     return P
 
 def grad_P(x, mu, con, con_gr, g):
-    grad_P = g(x)
-    for i in range(len(con)):
-        grad_P -= mu*con_gr[i]/con[i]
+    con = con.reshape((len(con), 1))
+    grad_P = g(x) - mu*np.sum(con_gr/con)
     return grad_P
      
 def check_KKT(x, mult, l, cf, g):
@@ -50,7 +47,6 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
     
     p = lambda x: P(x, mu, con, f)
     g_p = lambda x: grad_P(x, mu, con, con_gr, g)
-    mu_vec = np.full(len(con), mu)
     
     while True:
         
@@ -58,7 +54,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
         x1 = sm.bfgs(p, g_p, x0, TOL = 1/k**2)
         
         # lagrange multipliers
-        lagrange = np.divide(mu_vec, con(x1))
+        lagrange = mu/con(x1)
         
         # convergence test
         # test for KKT
