@@ -313,38 +313,7 @@ def constraints(x, lambda_l, lambda_h):
                                               0])}
     return [constraint1, constraint2, constraint3, constraint4, constraint5]
   
-def P(x, mu, con, z, w, f):
-    P = f(z, w, x)
-    for i in range(len(con)):
-        if con[i]['type'] == 'ineq':
-            P += mu*con[i]['fun']
-    return P
-
-def grad_P(x, mu, con, z, w):
-    grad_P = jacobi(z, w, x)
-    for i in range(len(con)):
-        if con[i]['type'] == 'ineq':
-            grad_P -= mu*con[i]['jac']
-    return grad_P
-     
-def barrier(x0, mu0, f):
-    k = 1
-    x1 = x0 
-    mu = mu0
-    
-    lambda p: P(x, mu, con, z, w, f)
-    lambda g_p: grad_P(x, mu, con, z, w)
-    
-    while True:
-        x = bfgs(p, g_p, TOL = 1/k)
-        
-        # lagrange multipliers
-        z = 
-        
-        
-        
-    
-
+      
 
 if __name__ == "__main__":
 #    test_grad()
