@@ -23,6 +23,8 @@ def backtracking_linesearch(f, g, x_k, p_k, g_k):
         alpha *= 0.5
         sd = f(x_k + alpha * p_k) <= f0 + c1 * alpha * g_k.T@p_k
         
+    print("Alpha", alpha)
+        
     return x_k + alpha*p_k
 
 
@@ -110,6 +112,8 @@ def steepest_descent(f, g, x, TOL = 1e-3):
     while True:
         x_k = backtracking_linesearch(f, g, x_k, p_k, g_k)
         g_k = g(x_k)
+        
+        print(g_k)
         
         iterations += 1
         if np.linalg.norm(g_k) < TOL or iterations >= 9999:
