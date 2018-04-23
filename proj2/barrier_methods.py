@@ -1,42 +1,68 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from constrained_ellipsoids.py import *
+import numpy as np
+import search_methods as sm
+
 
 # every constraint is a inequality constraint
 
-def P(x, mu, con, z, w, f):
-    P = f(z, w, x)
+def P(x, mu, con, f):
+    P = f(x)
     for i in range(len(con)):
         P -= mu*con[i]
     return P
 
-def grad_P(x, mu, con, con_gr, z, w):
-    grad_P = jacobi(z, w, x)
+def grad_P(x, mu, con, con_gr, g):
+    grad_P = g(x)
     for i in range(len(con)):
         grad_P -= mu*con_gr[i]/con[i]
     return grad_P
      
-def barrier(x0, mu0, f, TOL):
+def check_KKT(x, mult, l, cf, g):
+    TOL1 = 10E-3
+    TOL2 = 10E-3
+    
+    if np.linalg.norm(g(x) - np.array((mult[0] - mult[1] + mult[4]/2*np.sqrt(x[2]/x[1]),
+                             mult[2] - mult[3] + mult[4]/2*np.sqrt(x[0]/x[2]), 
+                             mult[3]*x[1]/np.sqrt(l**2 + x[1]**2))), 2) > TOL1:
+        return False
+    con = cf(x)
+    for c in con:
+        if con < 0:
+            return False
+    for m in mult:
+        if m < 0:
+            return False
+    for i in range(mult):
+        if mult[i]*con[i] > TOL2:
+            return False
+    return True
+        
+
+def barrier(x0, mu0, cf, cg, l_eigen, f, g):
     k = 1
-    x1 = x0 
     mu = mu0
+    x1 = x0
     
     con = cf(x1)
-    con_gr = cg(x)
+    con_gr = cg(x1)
     
-    lambda p: P(x, mu, con, z, w, f)
-    lambda g_p: grad_P(x, mu, con, con_gr, z, w)
+    p = lambda x: P(x, mu, con, f)
+    g_p = lambda x: grad_P(x, mu, con, con_gr, g)
     mu_vec = np.full(len(con), mu)
     
     while True:
-        x1 = bfgs(p, g_p, TOL = 1/k) # have to modify bfgs to yield feasable points
+        
+        print('Iteration {}'.format(k))
+        x1 = sm.bfgs(p, g_p, x0, TOL = 1/k**2)
         
         # lagrange multipliers
-        z = np.divide(mu_vec, con(x1))
+        lagrange = np.divide(mu_vec, con(x1))
         
         # convergence test
-        if mu < TOL:
+        # test for KKT
+        if check_KKT(x1, lagrange, l_eigen, cf, g):
             return x1
         
         # new penalty parameter
@@ -46,4 +72,7 @@ def barrier(x0, mu0, f, TOL):
 
         if k > 10000:
             print('No convergence in {} steps'.format(k))
+            break
+        
+        x0 = x1
         

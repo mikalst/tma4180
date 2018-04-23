@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize as minimize
 
 import search_methods as sm
-import constrained_search_methods as csm
+#import constrained_search_methods as csm
+import barrier_methods as bm
 
 
 def find_weights(zz, A, c):
@@ -316,11 +317,60 @@ def testScipy():
     #
     #Barrier / Augmented Lagrangian er kanskje enklere. 
     
+  
+def cf(x, l, h):
+    CONSTRAINTS = 5
+    cc = np.zeros((CONSTRAINTS, ))
+    cc[0] = x[0] - l
+    cc[1] = -x[0] + h
+    cc[2] = x[2] - l
+    cc[3] = -x[2] + h
+    cc[4] = np.power(x[0]*x[2], 0.5) - np.power(l**2 + x[1]**2, 0.5)
+    return cc
     
+def cg(x, l):
+    CONSTRAINTS = 5
+    cg = np.zeros((CONSTRAINTS, CONSTRAINTS))
+    cg[:, 0] = np.array([1, 0, 0, 0, 0])
+    cg[:, 1] = np.array([-1, 0, 0, 0, 0])
+    cg[:, 2] = np.array([0, 0, 1, 0, 0])
+    cg[:, 3] = np.array([0, 0, -1, 0, 0])
+    cg[:, 4] = np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5), -np.power(l**2 + x[1]**2, -0.5)*x[1],
+                                          0.5*x[0]*np.power(x[0]*x[2], -0.5), 0, 0])
+    return cg
+
+
+
+def test_barrier():
+    nz = 500
+    N = 2
+    z, w = generate_points(nz, N)
+    mu0 = 1
+    
+    A = np.array([[1, -10], [-10, 1]])
+    c = np.array([.0, .0])
+    w = find_weights(z, A, c)
+    
+    x = np.random.rand(int(N*(N+1)/2 + N))
+    #color = [['green', 0, 'red'][1-i] for i in w]
+    
+    
+    lambda_l = 1
+    lambda_h = 1E3
+    
+    constraint = lambda x: cf(x, lambda_l, lambda_h)
+    constraint_grad = lambda x: cg(x, lambda_l)
+    
+    f, g = setmodelzw(z, w, x)
+    
+    x = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
+    
+    return x
+
 
 
 if __name__ == "__main__":
 #    test_grad()
-    testScipy()
+#    testScipy()
 #    test2D(True)
-
+    test_barrier()
