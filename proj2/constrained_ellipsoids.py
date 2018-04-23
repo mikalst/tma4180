@@ -373,6 +373,7 @@ def test_barrier():
     
     x = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
     
+    print(x)
     return x
 
 

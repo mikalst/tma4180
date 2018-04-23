@@ -10,7 +10,7 @@ import search_methods as sm
 def P(x, mu, con, f):
     P = f(x)
     for i in range(len(con)):
-        P -= mu*con[i]
+        P -= mu*np.log(con[i])
     return P
 
 def grad_P(x, mu, con, con_gr, g):
