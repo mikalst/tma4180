@@ -132,11 +132,14 @@ def bfgs(f, g, x, TOL = 1e-3):
     H_k =  I
 
     while True:
+        print(iterations)
         x0 = x_k
         g0 = g_k    
         p_k = - H_k@g_k
         
         x_k = linesearch(f, g, x_k, p_k, 1E-4, 0.9, wolfe='w')
+        # feasability test
+        
         g_k = g(x_k)
         
         iterations += 1
