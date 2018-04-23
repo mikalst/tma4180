@@ -358,13 +358,20 @@ def test_barrier():
     A = np.array([[1, -10], [-10, 1]])
     c = np.array([.0, .0])
     w = find_weights(z, A, c)
+    color = [['green', 0, 'red'][1-i] for i in w]
     
-    x = np.random.rand(int(N*(N+1)/2 + N))
-    #color = [['green', 0, 'red'][1-i] for i in w]
+    lambda_l = 1E-16
+    lambda_h = 1E16
     
-    
-    lambda_l = 1
-    lambda_h = 1E3
+    #Initialize with feasible initial point
+    while True:
+        x = np.random.randn(int(N*(N+1)/2 + N))
+        if (x[0] >= lambda_l and
+            x[2] >= lambda_l and
+            x[0] <= lambda_h and
+            x[2] <= lambda_h and
+            np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5) >= 0):
+            break
     
     constraint = lambda x: cf(x, lambda_l, lambda_h)
     constraint_grad = lambda x: cg(x, lambda_l)

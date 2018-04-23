@@ -8,12 +8,13 @@ import search_methods as sm
 # every constraint is a inequality constraint
 
 def P(x, mu, con, f):
+    assert((con > 0).all())
     P = f(x) - mu*sum(np.log(con))
     return P
 
 def grad_P(x, mu, con, con_gr, g):
-    con = con.reshape((len(con), 1))
-    grad_P = g(x) - mu*np.sum(con_gr/con)
+    con = con.reshape((len(con), ))
+    grad_P = g(x) - mu*np.sum(con_gr/con, axis = 0)
     return grad_P
 
 
