@@ -8,15 +8,14 @@ import search_methods as sm
 # every constraint is a inequality constraint
 
 def P(x, mu, con, f):
-    P = f(x)
-    for i in range(len(con)):
-        P -= mu*np.log(con[i])
+    P = f(x) - mu*sum(np.log(con))
     return P
 
 def grad_P(x, mu, con, con_gr, g):
     grad_P = g(x)
     for i in range(len(con)):
         grad_P -= mu*con_gr[i]/con[i]
+    print(grad_P)
     return grad_P
 
 
