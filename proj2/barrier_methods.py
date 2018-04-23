@@ -1,35 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 20 13:53:48 2018
 
-@author: Lars
-"""
+from constrained_ellipsoids.py import *
+
+# every constraint is a inequality constraint
 
 def P(x, mu, con, z, w, f):
     P = f(z, w, x)
     for i in range(len(con)):
-        if con[i]['type'] == 'ineq':
-            P += mu*con[i]['fun']
+        P -= mu*con[i]
     return P
 
-def grad_P(x, mu, con, z, w):
+def grad_P(x, mu, con, con_gr, z, w):
     grad_P = jacobi(z, w, x)
     for i in range(len(con)):
-        if con[i]['type'] == 'ineq':
-            grad_P -= mu*con[i]['jac']
+        grad_P -= mu*con_gr[i]/con[i]
     return grad_P
      
-def barrier(x0, mu0, f):
+def barrier(x0, mu0, f, TOL):
     k = 1
     x1 = x0 
     mu = mu0
     
+    con = cf(x1)
+    con_gr = cg(x)
+    
     lambda p: P(x, mu, con, z, w, f)
-    lambda g_p: grad_P(x, mu, con, z, w)
+    lambda g_p: grad_P(x, mu, con, con_gr, z, w)
+    mu_vec = np.full(len(con), mu)
     
     while True:
-        x = bfgs(p, g_p, TOL = 1/k) # have to modify bfgs to yield feasable points
+        x1 = bfgs(p, g_p, TOL = 1/k) # have to modify bfgs to yield feasable points
         
         # lagrange multipliers
-        z = 
+        z = np.divide(mu_vec, con(x1))
+        
+        # convergence test
+        if mu < TOL:
+            return x1
+        
+        # new penalty parameter
+        mu = 1/2*mu
+        
+        k += 1
+
+        if k > 10000:
+            print('No convergence in {} steps'.format(k))
+        

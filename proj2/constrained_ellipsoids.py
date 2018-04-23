@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize as minimize
 
 import search_methods as sm
+import constrained_search_methods as csm
 
 
 def find_weights(zz, A, c):
@@ -238,8 +239,8 @@ def testScipy():
     
     f, g = setmodelzw(z, w, x)
     
-    lambda_l = 4
-    lambda_h = 1E10
+    lambda_l = 1
+    lambda_h = 1E3
     
     constraint1 = {'type': 'ineq',
                    'fun': lambda x: x[0] - lambda_l,
@@ -264,6 +265,28 @@ def testScipy():
                                               0.5*x[0]*np.power(x[0]*x[2], -0.5),
                                               0,
                                               0])}
+    
+    def cf(x):
+        CONSTRAINTS = 5
+        cc = np.zeros((CONSTRAINTS, ))
+        cc[0] = x[0] - lambda_l
+        cc[1] = -x[0] + lambda_h
+        cc[2] = x[2] - lambda_l
+        cc[3] = -x[2] + lambda_h
+        cc[4] = np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5)
+        return cc
+    
+    def cg(x):
+        CONSTRAINTS = 5
+        cg = np.zeros((CONSTRAINTS, CONSTRAINTS))
+        cg[:, 0] = np.array([1, 0, 0, 0, 0])
+        cg[:, 1] = np.array([-1, 0, 0, 0, 0])
+        cg[:, 2] = np.array([0, 0, 1, 0, 0])
+        cg[:, 3] = np.array([0, 0, -1, 0, 0])
+        cg[:, 4] = np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5), -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
+                                              0.5*x[0]*np.power(x[0]*x[2], -0.5), 0, 0])
+        return cg
+        
     
     x0 = minimize(f, x, jac=g, method = 'SLSQP', constraints = [constraint1,
                                                                 constraint2,
@@ -271,49 +294,30 @@ def testScipy():
                                                                 constraint4,
                                                                 constraint5])
     
-    x1 = minimize(f, x, jac=g, method = 'COBYLA', constraints = [constraint1,
-                                                                constraint2,
-                                                                constraint3,
-                                                                constraint4,
-                                                                constraint5])
+#    x1 = minimize(f, x, jac=g, method = 'COBYLA', constraints = [constraint1,
+#                                                                constraint2,
+#                                                                constraint3,
+#                                                                constraint4,
+#                                                                constraint5])
+    
+    l_0 = np.zeros(5)
+    csm.linesearch_sqp(x, l_0, f, g, cf, cg)
     
     x2, it2, err2 = sm.bfgs(f, g, x)
     
-    print(x0); print(x1)
+    print(x0)
     
     plt.scatter(z[:, 0], z[:, 1], c=color)
     plot(x0.x, z, color, 'orange', 'SLSQP')
-    plot(x1.x, z, color, 'purple', 'COBYLA')
+#    plot(x1.x, z, color, 'purple', 'COBYLA')
     plot(x2, z, color, 'yellow', 'BFGS - Unconstrained')
     
+    #Alltid lettere med likhet, problemet er at 
+    #
+    #Barrier / Augmented Lagrangian er kanskje enklere. 
     
-def constraints(x, lambda_l, lambda_h):
-    constraint1 = {'type': 'ineq',
-                   'fun': lambda x: x[0] - lambda_l,
-                   'jac': lambda x: np.array([1, 0, 0, 0, 0])}
     
-    constraint2 = {'type': 'ineq',
-                   'fun': lambda x: -x[0] + lambda_h,
-                   'jac': lambda x: np.array([-1, 0, 0, 0, 0])}
-    
-    constraint3 = {'type': 'ineq',
-                   'fun': lambda x: x[2] - lambda_l,
-                   'jac': lambda x: np.array([0, 0, 1, 0, 0])}
-    
-    constraint4 = {'type': 'ineq',
-                   'fun': lambda x: -x[2] + lambda_h,
-                   'jac': lambda x: np.array([0, 0, -1, 0, 0])}
-    
-    constraint5 = {'type': 'ineq',
-                   'fun': lambda x: np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5),
-                   'jac': lambda x: np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5),
-                                              -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
-                                              0.5*x[0]*np.power(x[0]*x[2], -0.5),
-                                              0,
-                                              0])}
-    return [constraint1, constraint2, constraint3, constraint4, constraint5]
-  
-      
+
 
 if __name__ == "__main__":
 #    test_grad()
