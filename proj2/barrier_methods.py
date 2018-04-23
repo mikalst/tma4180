@@ -12,15 +12,8 @@ def P(x, mu, con, f):
     return P
 
 def grad_P(x, mu, con, con_gr, g):
-<<<<<<< HEAD
     con = con.reshape((len(con), 1))
     grad_P = g(x) - mu*np.sum(con_gr/con)
-=======
-    grad_P = g(x)
-    for i in range(len(con)):
-        grad_P -= mu*con_gr[i]/con[i]
-    print(grad_P)
->>>>>>> 74b0c85f6acd35d49a91abaefa5327712382b472
     return grad_P
 
 
