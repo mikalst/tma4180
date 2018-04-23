@@ -18,7 +18,7 @@ def equality_constrained_qp(g, x_k, B_k, cf, cg, W_k):
     
     
     g_k = g(x_k)
-    cf_k = cf(x_k)
+    cf_k = -cf(x_k)
     cg_k = cg(x_k)
     
     
@@ -43,12 +43,41 @@ def equality_constrained_qp(g, x_k, B_k, cf, cg, W_k):
     
     #Set optimal lambda to 0 for all lambda not in the working set
     l_opt = np.zeros((CONSTRAINTS, ))
-    for i in range(len(W_k)):
-        l_opt[W_k[i]] = bsol[i] 
+    for i in W_k:
+        l_opt[i] = bsol[i] 
         
-    print(p_opt.shape(), l_opt.shape)
-    
+
     return p_opt, l_opt
+
+
+"""
+def active_set_method_convex_qp(G, c, A, b):
+    \"""Solve the inequality-constrained convex quadratic programming problem by
+    iterating over several equality constrained convex QPs. As explained in Algorithm
+    16.3
+    
+    On the form min f(x) = xGx + cx
+                st.         Ax - b >= 0
+    \"""
+    N_constraints = len(b)
+    
+    #Compute feasible starting point x_0
+    x_0 = np.ones((len(c), ))
+    constraint_values = A.dot(x_0) - b
+    #Assert starting point is feasible
+    assert(np.all(A.dot(x_0) - b >= 0))
+    
+    #Create set of active constraints
+    W_k = set([])
+    
+    for i in range(N_constraints):
+        #Check if constraint is active
+        if constraint_values[i] <= 1E-3:
+            W_k.add(i)
+        
+    iterations = 0
+        while (iterations <= 50):
+"""
 
 
 def active_set_method_convex_qp(g, x_k, B_k, cf, cg):
@@ -69,7 +98,7 @@ def active_set_method_convex_qp(g, x_k, B_k, cf, cg):
         
         if np.linalg.norm(p_k, 2) < 1E-8:
             if not((l_k < 0).any):
-                return x_k + g(x_k).dot(p_k)
+                return x_k + g(x_k).dot(p_k), l_k
             else:
                 j = np.argmin(l_k)
                 x_k = x_k
@@ -77,13 +106,13 @@ def active_set_method_convex_qp(g, x_k, B_k, cf, cg):
             
         else:
             restricting = []
-            qf_k = qf(x_k)
-            qg_k = qg(x_k)
+            cf_k = cf(x_k)
+            cg_k = cg(x_k)
             for i in W_k:
-                if qg(x_k)[i].dot(p_k) < 0:
-                    restricting.append((qf_k[i] - qg_k[i].dot(x_k))/(qg_k[i].dot(p_k)))
+                if cg(x_k)[i].dot(p_k) < 0:
+                    restricting.append((cf_k[i] - cg_k[i].dot(x_k))/(cg_k[i].dot(p_k)))
                     
-            if np.empty(restricting):
+            if len(restricting)==0:
                 alpha_k = 1
             else:
                 alpha_k = min(1, min(restricting))
@@ -123,6 +152,25 @@ def active_set_method_convex_qp(g, x_k, B_k, cf, cg):
 #    
 #    return x0
 
+
+def scipy_qp_solver(g, x_k, B_k, cf, cg):
+    
+    f = lambda p: 1/2*np.dot(p, np.dot(B_k, p))
+    
+    
+    constraint1 = {'type': 'ineq',
+                   'fun': lambda p: x_k[0] + p[0] - lambda_l}
+    
+    constraint2 = {'type': 'ineq',
+                   'fun': lambda p: lambda_h - (x_k[0] + p[0])}
+    
+    constraint3 = {'type': 'ineq',
+                   'fun': lambda p: (x_k[2]+p[2]) - lambda_l}
+    
+    constraint4 = {'type': 'ineq',
+                   'fun': lambda p: lambda_h - (x_k[2] + p[2])}
+
+
 def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     
     def lagrangian_x(x, l):
@@ -151,6 +199,7 @@ def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     l_k = l_0
     
     while np.linalg.norm(g(x_k), 2) > 1E-3:
+        p_k = 
         p_k, l_hat = active_set_method_convex_qp(g, x_k, B_k, cf, cg)
         p_l = l_hat - l_k
         #Choose mu_k to satisfy (18.36) with sigma = 1
