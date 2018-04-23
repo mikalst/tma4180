@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize as minimize
 
 import search_methods as sm
-import constrained_search_methods as csm
+import sqp_methods as csm
 import barrier_methods as bm
 
 
