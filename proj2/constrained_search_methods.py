@@ -199,7 +199,7 @@ def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     l_k = l_0
     
     while np.linalg.norm(g(x_k), 2) > 1E-3:
-        p_k = 
+#        p_k = 
         p_k, l_hat = active_set_method_convex_qp(g, x_k, B_k, cf, cg)
         p_l = l_hat - l_k
         #Choose mu_k to satisfy (18.36) with sigma = 1

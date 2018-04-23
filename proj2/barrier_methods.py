@@ -18,7 +18,8 @@ def grad_P(x, mu, con, con_gr, g):
     for i in range(len(con)):
         grad_P -= mu*con_gr[i]/con[i]
     return grad_P
-     
+
+
 def check_KKT(x, mult, l, cf, g):
     TOL1 = 10E-3
     TOL2 = 10E-3
@@ -52,10 +53,19 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
     g_p = lambda x: grad_P(x, mu, con, con_gr, g)
     mu_vec = np.full(len(con), mu)
     
+    testp = np.random.randn(5)
+    
+    #Testing finite differences
+    for eps in np.logspace(0, -10, 10):
+        print("Eps = {:.2E}".format(eps), (p(x1 + eps*testp) - p(x1))/eps - g_p(x1).dot(testp))
+    
+    
     while True:
         
         print('Iteration {}'.format(k))
-        x1 = sm.bfgs(p, g_p, x0, TOL = 1/k**2)
+        x1 = sm.bfgs(p, g_p, x0, TOL = 1/k**2)        
+#        x1 = sm.steepest_descent(p, g_p, x0, TOL = 1/k**2)
+#        x1 = sm.fletcher_reeves(p, g_p, x0, TOL = 1/k**2)
         
         # lagrange multipliers
         lagrange = np.divide(mu_vec, con(x1))

@@ -188,6 +188,7 @@ def test_grad():
     for e in eps:
         print("ep = {:e}, error = {:e}".format(e, gi.dot(p)-(f(x + e*p) - fi)/e))         
 
+
 #test_grad()
 
 
@@ -328,14 +329,24 @@ def cf(x, l, h):
 def cg(x, l):
     CONSTRAINTS = 5
     cg = np.zeros((CONSTRAINTS, CONSTRAINTS))
-    cg[:, 0] = np.array([1, 0, 0, 0, 0])
-    cg[:, 1] = np.array([-1, 0, 0, 0, 0])
-    cg[:, 2] = np.array([0, 0, 1, 0, 0])
-    cg[:, 3] = np.array([0, 0, -1, 0, 0])
-    cg[:, 4] = np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5), -np.power(l**2 + x[1]**2, -0.5)*x[1],
+    cg[0, :] = np.array([1, 0, 0, 0, 0])
+    cg[1, :] = np.array([-1, 0, 0, 0, 0])
+    cg[2, :] = np.array([0, 0, 1, 0, 0])
+    cg[3, :] = np.array([0, 0, -1, 0, 0])
+    cg[4, :] = np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5), -np.power(l**2 + x[1]**2, -0.5)*x[1],
                                           0.5*x[0]*np.power(x[0]*x[2], -0.5), 0, 0])
     return cg
 
+
+#np.random.seed()
+#testx = 1+np.random.randn(5)
+#testp = np.random.randn(5)
+#
+#for eps in range(0, -8, -1):
+#    lh = 1E3
+#    ll = 1E0
+#    eps = 10**eps
+#    print("Eps: ", (cf(testx + eps*testp, ll, lh) - cf(testx, ll, lh))/(eps) - cg(testx, ll).dot(testp))
 
 
 def test_barrier():
