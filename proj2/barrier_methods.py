@@ -63,8 +63,8 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
         print('Iteration {}'.format(k))
         
         x1, it1, err1 = sm.bfgs(p, g_p, x0, TOL = 1/k**2)    
-#        x1 = sm.steepest_descent(p, g_p, x0, TOL = 1/k**2)
-#        x1 = sm.fletcher_reeves(p, g_p, x0, TOL = 1/k**2)
+#        x1, it1, err1 = sm.steepest_descent(p, g_p, x0, TOL = 1/k**2)
+#        x1, it1, err1 = sm.fletcher_reeves(p, g_p, x0, TOL = 1/k**2)
         
         # approximate lagrange multipliers
         lagrange = mu/cf(x1)
@@ -79,7 +79,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
         
         k += 1
 
-        if k > 10000:
+        if k > 999:
             print('No convergence in {} steps'.format(k))
             break
         

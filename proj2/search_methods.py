@@ -127,7 +127,7 @@ def steepest_descent(f, g, x, TOL = 1e-3):
 
 
 def bfgs(f, g, x, TOL = 1e-3):
-    print("BFGS \nf(x_0) = ", f(x))
+    #print("BFGS \nf(x_0) = ", f(x))
     
     I = np.identity(len(x))
     iterations = 1
@@ -136,7 +136,6 @@ def bfgs(f, g, x, TOL = 1e-3):
     H_k =  I
 
     while True:
-        if iterations%10==0: print(iterations)
         x0 = x_k
         g0 = g_k    
         p_k = - H_k@g_k
@@ -162,8 +161,8 @@ def bfgs(f, g, x, TOL = 1e-3):
         rho = 1/y.dot(s)
         H_k = (I - rho*np.outer(s, y))@H_k@(I - rho*np.outer(y, s)) + rho*np.outer(s, s)
     
-    print("f(x_{}) = {}".format(iterations, f(x_k)))
-    
+    #print("f(x_{}) = {}".format(iterations, f(x_k)))
+    print('BFGS iterations: {}'.format(iterations))
     return x_k, iterations, f(x_k)
 
 
