@@ -235,7 +235,7 @@ def test_barrier():
     nz = 500
     N = 2
     z, w = generate_points(nz, N)
-    mu0 = 1
+    mu0 = 2
     
     A = np.array([[1, -10], [-10, 1]])
     c = np.array([.0, .0])
