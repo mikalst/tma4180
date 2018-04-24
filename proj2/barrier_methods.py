@@ -18,6 +18,7 @@ def P(x, mu, con, f):
 def grad_P(x, mu, con, con_gr, g):
 #    grad_P = g(x) - mu*np.sum(con_gr(x)/con(x), axis = 0)
     grad_P = g(x) - mu*np.sum(np.divide(con_gr(x), np.reshape(con(x), newshape=(5, 1))), axis = 0)
+
     return grad_P
 
 
@@ -45,10 +46,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
     k = 1
     mu = mu0
     x1 = x0
-    
-#    con = cf(x1)
-#    con_gr = cg(x1)
-    
+        
     p =   lambda x:      P(x, mu, cf, f)
     g_p = lambda x: grad_P(x, mu, cf, cg, g)
     
