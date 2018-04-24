@@ -246,31 +246,29 @@ def test_barrier():
     lambda_h = 1E3
     
     #Initialize with feasible initial point
-    while True:
-        x = np.random.randn(int(N*(N+1)/2 + N))
-        if (x[0] >= lambda_l and
-            x[2] >= lambda_l and
-            x[0] <= lambda_h and
-            x[2] <= lambda_h and
-            np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5) >= 0):
-            break
+    x = np.zeros(int(N*(N+1)/2 + N))
+    x[0] = (lambda_l + lambda_h)/2
+    x[1] = 0
+    x[2] = (lambda_l + lambda_h)/2
     
     constraint =      lambda x: cf(x, lambda_l, lambda_h)
     constraint_grad = lambda x: cg(x, lambda_l)
     
     f, g = setmodelzw(z, w, x)
     
-    x = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
+    x1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
     
     print('Final x = {}'.format(x))
     
     
-    x0 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+    x3_unconstrained, it3, err3 = sm.bfgs(f, g, x)
     
     
     plt.scatter(z[:, 0], z[:, 1], c=color)
-    plot(x, z, color, 'green', 'biatch')
-    plot(x0.x, z, color, 'yellow', 'scipy')
+    plot(x1, z, color, 'purple', 'Log-barrier')
+    plot(x2.x, z, color, 'yellow', 'scipy')
+    plot(x3_unconstrained, z, color, 'blue', 'unconstrained BFGS')
     
     return x
 

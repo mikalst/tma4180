@@ -58,6 +58,9 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
 #    for eps in np.logspace(0, -10, 11):
 #        print("Eps = {:.2E}".format(eps), (p(x1 + eps*testp) - p(x1))/eps - g_p(x1).dot(testp))    
     
+    
+    np.seterr('ignore')
+    
     while True:
         
         print('Iteration {}'.format(k))
