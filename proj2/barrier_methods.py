@@ -12,9 +12,8 @@ def P(x, mu, con, f):
     P = f(x) - mu*sum(np.log(con))
     return P
 
-def grad_P(x, mu, con, con_gr, g):
-    con = con.reshape((len(con), ))
-    grad_P = g(x) - mu*np.sum(con_gr/con, axis = 0)
+def grad_P(x, mu, con, con_gr, g, l):
+    grad_P = g(x) - mu*np.sum(con_gr(x)/con(x), axis = 0)
     return grad_P
 
 
@@ -44,11 +43,8 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
     mu = mu0
     x1 = x0
     
-    con = cf(x1)
-    con_gr = cg(x1)
-    
-    p = lambda x: P(x, mu, con, f)
-    g_p = lambda x: grad_P(x, mu, con, con_gr, g)
+    p = lambda x: P(x, mu, cf, f)
+    g_p = lambda x: grad_P(x, mu, cf, cg, g, l_eigen)
     
     testp = np.random.randn(5)
     
@@ -65,7 +61,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
 #        x1 = sm.fletcher_reeves(p, g_p, x0, TOL = 1/k**2)
         
         # lagrange multipliers
-        lagrange = mu/con(x1)
+        lagrange = mu/cf(x1)
         
         # convergence test
         # test for KKT
