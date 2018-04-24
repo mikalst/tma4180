@@ -9,8 +9,21 @@ Created on Wed Feb 21 12:21:45 2018
 import numpy as np
 import numpy.random
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize as minimize
 
 import search_methods as sm
+import sqp_methods as sqp
+import barrier_methods as bm
+
+
+def find_weights(zz, A, c):
+    w = np.zeros(len(zz), dtype = np.int)
+    for i, z in enumerate(zz):
+        if np.dot(z, A).dot(z) + c.dot(z) <= 1:
+            w[i] = 1
+        else:
+            w[i] = -1
+    return w
 
 
 def generate_points(num, dim=2):
@@ -127,7 +140,7 @@ def constraint_grad(x):
     g = np.zeros((num_constraints, len(x)))
     A, c = xTm(x)
     g[0, :] = np.array([A[0, 0], 0, 0, 0, 0])
-    return
+    return 
 
 
 def setmodelzw(z, w, x):
@@ -155,66 +168,113 @@ def plot(x, z, pointcol, color='r', name='default'):
     for l, s in zip(CS.levels, strs):
         fmt[l] = s
     plt.clabel(CS, CS.levels[::2], inline=True, fmt=fmt, fontsize=10)
- 
-
-def test_grad():
-    N = 2
-    z, w = generate_points(10, 2)
-    x = np.random.rand(5)
-    f, g = setmodelzw(z, w, x)
-    eps = [10**k for k in range(-1, -12, -1)]
-    fi = f(x)
-    gi = g(x)
-#    
-#    p = np.identity(int(2*(2+1)/2) + 2)
-#    permute = np.random.rand(int(2*(2+1)/2) + 2, int(2*(2+1)/2) + 2)
-#    p = permute@p
     
-    p = np.random.rand((int(N*(N+1)/2 + N)))
-    print("p = {}".format(p))
-    for e in eps:
-        print("ep = {:e}, error = {:e}".format(e, gi.dot(p)-(f(x + e*p) - fi)/e))         
-
-#test_grad()
-
-
-def test2D(rand=False):
     
-    N = 2
+def cf(x, l, h):
+    CONSTRAINTS = 5
+    cc = np.zeros((CONSTRAINTS, ))
+    cc[0] = x[0] - l
+    cc[1] = -x[0] + h
+    cc[2] = x[2] - l
+    cc[3] = -x[2] + h
+    cc[4] = np.power(x[0]*x[2], 0.5) - np.power(l**2 + x[1]**2, 0.5)
+    return cc
     
-    if rand:
-        np.random.seed()
-        seed = np.random.randint(100)
-        np.random.seed(seed)
-      
-    nz = 10
-    z, w = generate_points(nz, N)
-    color = [['green', 0, 'red'][1-i] for i in w]
-    x = np.random.rand(int(N*(N+1)/2 + N))
-    
-    plt.figure(figsize=(8, 8))
-    plt.subplot(111)
+def cg(x, l):
+    CONSTRAINTS = 5
+    cg = np.zeros((CONSTRAINTS, CONSTRAINTS))
+    cg[0, :] = np.array([1, 0, 0, 0, 0])
+    cg[1, :] = np.array([-1, 0, 0, 0, 0])
+    cg[2, :] = np.array([0, 0, 1, 0, 0])
+    cg[3, :] = np.array([0, 0, -1, 0, 0])
+    cg[4, :] = np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5), -np.power(l**2 + x[1]**2, -0.5)*x[1],
+                                          0.5*x[0]*np.power(x[0]*x[2], -0.5), 0, 0])
+    return cg
 
-    f, g = setmodelzw(z, w, x)
-   
-    x1, it1, err1 = sm.steepest_descent(f, g, x)
-    x2, it2, err2 = sm.bfgs(f, g, x)
-    x3, it3, err3 = sm.fletcher_reeves(f, g, x)
+def test_finite_difference_constraints():
+    np.random.seed()
+    testx = 1+np.random.randn(5)
+    testp = np.random.randn(5)
+    
+    for eps in range(0, -8, -1):
+        lh = 1E3
+        ll = 1E0
+        eps = 10**eps
+        print("Epsiladis: ", (cf(testx + eps*testp, ll, lh) - cf(testx, ll, lh))/(eps) - cg(testx, ll).dot(testp))
+#test_finite_difference_constraints()
         
-#    plot_ellipse(x, z, color, N, 'blue', 'Initial')
-    plot(x1, z, color, 'orange', 'SD')
-    plot(x2, z, color, 'purple', 'BFGS')
-    plot(x3, z, color, 'yellow', 'FR')
-    plt.scatter(z[:, 0], z[:, 1], c=color)
-    plt.title(r"SD=({}, {:.2f}), BFGS=({}, {:.2f}), FR=({}, {:.2f})".format(
-            it1, err1, it2, err2, it3, err3), fontsize = 11.5)
-    plt.show()
+        
+def scipy_constraints(lambda_l, lambda_h):
+    constraint1 = {'type': 'ineq',
+                   'fun': lambda x: x[0] - lambda_l,
+                   'jac': lambda x: np.array([1, 0, 0, 0, 0])}
     
-#test2D(True)
+    constraint2 = {'type': 'ineq',
+                   'fun': lambda x: -x[0] + lambda_h,
+                   'jac': lambda x: np.array([-1, 0, 0, 0, 0])}
+    
+    constraint3 = {'type': 'ineq',
+                   'fun': lambda x: x[2] - lambda_l,
+                   'jac': lambda x: np.array([0, 0, 1, 0, 0])}
+    
+    constraint4 = {'type': 'ineq',
+                   'fun': lambda x: -x[2] + lambda_h,
+                   'jac': lambda x: np.array([0, 0, -1, 0, 0])}
+    
+    constraint5 = {'type': 'ineq',
+                   'fun': lambda x: np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5),
+                   'jac': lambda x: np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5),
+                                              -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
+                                              0.5*x[0]*np.power(x[0]*x[2], -0.5),
+                                              0,
+                                              0])}       
+    return [constraint1, constraint2, constraint3, constraint4, constraint5]
+
+
+def test_barrier():
+    nz = 500
+    N = 2
+    z, w = generate_points(nz, N)
+    mu0 = 1
+    
+    A = np.array([[1, -10], [-10, 1]])
+    c = np.array([.0, .0])
+    w = find_weights(z, A, c)
+    color = [['green', 0, 'red'][1-i] for i in w]
+    
+    lambda_l = 1E0
+    lambda_h = 1E3
+    
+    #Initialize with feasible initial point
+    while True:
+        x = np.random.randn(int(N*(N+1)/2 + N))
+        if (x[0] >= lambda_l and
+            x[2] >= lambda_l and
+            x[0] <= lambda_h and
+            x[2] <= lambda_h and
+            np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5) >= 0):
+            break
+    
+    constraint =      lambda x: cf(x, lambda_l, lambda_h)
+    constraint_grad = lambda x: cg(x, lambda_l)
+    
+    f, g = setmodelzw(z, w, x)
+    
+    x = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
+    
+    print('Final x = {}'.format(x))
+    
+    
+    x0 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+    
+    
+    plt.scatter(z[:, 0], z[:, 1], c=color)
+    plot(x, z, color, 'green', 'biatch')
+    plot(x0.x, z, color, 'yellow', 'scipy')
+    
+    return x
 
 
 
 if __name__ == "__main__":
-#    test_grad()
-    test2D(True)
-
+    test_barrier()
