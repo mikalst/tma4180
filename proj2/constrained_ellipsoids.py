@@ -346,7 +346,7 @@ def cg(x, l):
 #    lh = 1E3
 #    ll = 1E0
 #    eps = 10**eps
-#    print("Eps: ", (cf(testx + eps*testp, ll, lh) - cf(testx, ll, lh))/(eps) - cg(testx, ll).dot(testp))
+#    print("Epsiladis: ", (cf(testx + eps*testp, ll, lh) - cf(testx, ll, lh))/(eps) - cg(testx, ll).dot(testp))
 
 
 def test_barrier():
@@ -360,8 +360,8 @@ def test_barrier():
     w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
-    lambda_l = 1E-16
-    lambda_h = 1E16
+    lambda_l = 1E0
+    lambda_h = 1E3
     
     #Initialize with feasible initial point
     while True:
@@ -373,7 +373,7 @@ def test_barrier():
             np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5) >= 0):
             break
     
-    constraint = lambda x: cf(x, lambda_l, lambda_h)
+    constraint =      lambda x: cf(x, lambda_l, lambda_h)
     constraint_grad = lambda x: cg(x, lambda_l)
     
     f, g = setmodelzw(z, w, x)
@@ -381,6 +381,44 @@ def test_barrier():
     x = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
     
     print(x)
+    
+    constraint1 = {'type': 'ineq',
+                   'fun': lambda x: x[0] - lambda_l,
+                   'jac': lambda x: np.array([1, 0, 0, 0, 0])}
+    
+    constraint2 = {'type': 'ineq',
+                   'fun': lambda x: -x[0] + lambda_h,
+                   'jac': lambda x: np.array([-1, 0, 0, 0, 0])}
+    
+    constraint3 = {'type': 'ineq',
+                   'fun': lambda x: x[2] - lambda_l,
+                   'jac': lambda x: np.array([0, 0, 1, 0, 0])}
+    
+    constraint4 = {'type': 'ineq',
+                   'fun': lambda x: -x[2] + lambda_h,
+                   'jac': lambda x: np.array([0, 0, -1, 0, 0])}
+    
+    constraint5 = {'type': 'ineq',
+                   'fun': lambda x: np.power(x[0]*x[2], 0.5) - np.power(lambda_l**2 + x[1]**2, 0.5),
+                   'jac': lambda x: np.array([0.5*x[2]*np.power(x[0]*x[2], -0.5),
+                                              -np.power(lambda_l**2 + x[1]**2, -0.5)*x[1],
+                                              0.5*x[0]*np.power(x[0]*x[2], -0.5),
+                                              0,
+                                              0])}        
+    
+    x0 = minimize(f, x, jac=g, method = 'SLSQP', constraints = [constraint1,
+                                                                constraint2,
+                                                                constraint3,
+                                                                constraint4,
+                                                                constraint5])
+    
+    
+    plt.scatter(z[:, 0], z[:, 1], c=color)
+    plot(x, z, color, 'green', 'biatch')
+    plot(x0.x, z, color, 'yellow', 'scipy')
+    
+    
+    
     return x
 
 
