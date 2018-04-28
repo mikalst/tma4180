@@ -97,7 +97,7 @@ def linesearch(f, g, x_k, p_k, c1, c2, wolfe='s'):
         i += 1
 
 
-def steepest_descent(f, g, x, TOL = 1e-3):
+def steepest_descent(f, g, x, TOL = 1e-3, max_iter = 9999):
     print("SD \nf(x_0) = ", f(x))
 
     g_k = g(x)
@@ -113,10 +113,10 @@ def steepest_descent(f, g, x, TOL = 1e-3):
         x_k = backtracking_linesearch(f, g, x_k, p_k, g_k)
         g_k = g(x_k)
         
-        print(g_k)
+#        print(g_k)
         
         iterations += 1
-        if np.linalg.norm(g_k) < TOL or iterations >= 9999:
+        if np.linalg.norm(g_k) < TOL or iterations >= max_iter:
             break
         
         p_k = -g_k
@@ -126,7 +126,7 @@ def steepest_descent(f, g, x, TOL = 1e-3):
     return x_k, iterations, f(x_k)
 
 
-def bfgs(f, g, x, TOL = 1e-3):
+def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999):
     #print("BFGS \nf(x_0) = ", f(x))
     
     I = np.identity(len(x))
@@ -146,7 +146,7 @@ def bfgs(f, g, x, TOL = 1e-3):
         g_k = g(x_k)
         
         iterations += 1
-        if np.linalg.norm(g_k) < TOL or iterations >= 9999:
+        if np.linalg.norm(g_k) < TOL or iterations >= max_iter:
             break
         
         #If change in x and g are very orthogonal, reset H to I
@@ -166,7 +166,7 @@ def bfgs(f, g, x, TOL = 1e-3):
     return x_k, iterations, f(x_k)
 
 
-def fletcher_reeves(f, g, x, TOL = 1e-3):
+def fletcher_reeves(f, g, x, TOL = 1e-3, max_iter = 9999):
     print("FR \nf(x_0) = ", f(x))
     x0 = x
     g0 = g(x)
@@ -179,7 +179,7 @@ def fletcher_reeves(f, g, x, TOL = 1e-3):
         x_next = linesearch(f, g, x0, p0, 1E-4, 0.45, wolfe='s')
         g_next = g(x_next)
           
-        if np.linalg.norm(g_next) < TOL or iterations >= 9999:
+        if np.linalg.norm(g_next) < TOL or iterations >= max_iter:
             break
           
         beta_fr = g_next.dot(g_next)/(g0.dot(g0))
