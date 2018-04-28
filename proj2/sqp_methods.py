@@ -13,7 +13,7 @@ import constrained_ellipsoids as ce
 CONSTRAINTS = 5
 
 
-LAMBDA = 1E0
+LAMBDA = 1E-3
 LAMBDB = 1E3
 
 def scipy_constraints_qp(x_k):
@@ -22,36 +22,62 @@ def scipy_constraints_qp(x_k):
     lambda_h = LAMBDB
     
     constraint1 = {'type': 'ineq',
-                   'fun': lambda p: x_k[0] + p[0] - lambda_l}
+                   'fun': lambda p: x_k[0] + p[0] - lambda_l,
+                   'jac': lambda x: np.array([1, 0, 0, 0, 0])}
     
     constraint2 = {'type': 'ineq',
-                   'fun': lambda p: lambda_h - (x_k[0] + p[0])}
+                   'fun': lambda p: lambda_h - (x_k[0] + p[0]),
+                   'jac': lambda x: np.array([-1, 0, 0, 0, 0])}
     
     constraint3 = {'type': 'ineq',
-                   'fun': lambda p: (x_k[2]+p[2]) - lambda_l}
+                   'fun': lambda p: (x_k[2]+p[2]) - lambda_l,
+                   'jac': lambda x: np.array([0, 0, 1, 0, 0])}
     
     constraint4 = {'type': 'ineq',
-                   'fun': lambda p: lambda_h - (x_k[2] + p[2])}
+                   'fun': lambda p: lambda_h - (x_k[2] + p[2]),
+                   'jac': lambda x: np.array([0, 0, -1, 0, 0])}
     
     constraint5 = {'type': 'ineq',
-                   'fun': lambda p: np.power((x_k[0]+p[0])*(x_k[2]+p[2]), 0.5) - np.power(lambda_l**2 + (x_k[1]+p[1])**2, 0.5)}       
+                   'fun': lambda p: np.power((x_k[0]+p[0])*(x_k[2]+p[2]), 0.5) - np.power(lambda_l**2 + (x_k[1]+p[1])**2, 0.5),
+                   'jac': lambda p: np.array([0.5*(x_k[2]+p[2])*np.power((x_k[0]+p[0])*(x_k[2]+p[2]), -0.5),
+                                              -1*(x_k[1] + p[1])*np.power(lambda_l**2 + (x_k[1]+p[1])**2, -0.5),
+                                              0.5*(x_k[0]+p[0])*np.power((x_k[0]+p[0])*(x_k[2]+p[2]), -0.5), 0, 0])}
 
     return [constraint1, constraint2, constraint3, constraint4, constraint5]
 
 
 def scipy_qp_solver(g, x_k, B_k):
     
-    f = lambda p: 1/2*np.dot(p, np.dot(B_k, p)) - g(x_k).dot(p)
-    p_0 = np.zeros(5)
+    f = lambda p: 1/2*np.dot(p, np.dot(B_k, p)) + g(x_k).dot(p)
+
+    p = np.random.randn(5)
+    while((ce.cf(x_k + p) < 0).any()):
+        p = np.random.randn(5)
     
     constraints = scipy_constraints_qp(x_k)
     
-    p = minimize(f, p_0, method = 'COBYLA', constraints = constraints).x
+    result = minimize(f, p, method = 'SLSQP', constraints = constraints)
     
-    print("p = ", p)
+#    Ettersp;r lagrange multiplikatorer fra minimize result
+    print(result.success)
     
-    return x
+    return result.x
+
+def check_KKT(x, l, g):
+    # set a tolerance for checking KKT 
+    TOL = 10E-3
     
+    if np.linalg.norm(g(x), 2)  > TOL:
+        return False
+    con = ce.cf(x)
+    if (con < 0).any():
+        return False
+    if (l < 0).any():
+        return False
+    if np.linalg.norm(g(x) - l.dot(ce.cg(x)), 2) > TOL:
+        return False
+    
+    return True
 
 
 def linesearch_sqp(x_0, l_0, f, g, cf, cg):
@@ -59,7 +85,7 @@ def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     def lagrangian_x(x, l):
         return g(x) + np.dot(l, cg(x, LAMBDA))
     
-    eta = 0.4
+    eta = 0.2
     tau = 0.5
     
 #    f_k = f(x_0)
@@ -70,8 +96,10 @@ def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     B_k = np.identity(len(x_0))
     
     #Functions and values that I need to find
-    mu_k = 1
+    mu_k = 0.5
     phi_1 = lambda x, mu: f(x) + mu * np.linalg.norm(cf(x, LAMBDA, LAMBDB), 1)
+    
+    FEIL
     D_1 = lambda phi, mu, p: g(x).dot(p) - mu * np.linalg.norm(cf(x, LAMBDA, LAMBDB), 1)
 
     #End of things I need to find
@@ -81,16 +109,18 @@ def linesearch_sqp(x_0, l_0, f, g, cf, cg):
     x_k = x_0
     l_k = l_0
     
-    while np.linalg.norm(g(x_k), 2) > 1E-3:
+    while(not check_KKT(x, l_k, g)):
 #        p_k = 
         p_k = scipy_qp_solver(g, x_k, B_k)
+        
         l_hat = np.linalg.lstsq(cg(x_k, LAMBDA), g(x_k))[0]
-        print(l_hat)
+        
         p_l = l_hat - l_k
         #Choose mu_k to satisfy (18.36) with sigma = 1
         alpha_k = 1
         while phi_1(x_k + alpha_k*p_k, mu_k) > phi_1(x_k, mu_k) + eta*alpha_k*D_1(phi_1(x_k, mu_k), mu_k, p_k):
             alpha_k = tau * alpha_k
+
         x_k_old = x_k
         x_k = x_k_old + alpha_k * p_k
         l_k = l_k + alpha_k * p_l
@@ -105,9 +135,11 @@ def linesearch_sqp(x_0, l_0, f, g, cf, cg):
         print("grad = {}".format(g(x_k)), "impr = {}".format(s_k), sep="\n")
         
         y_k = lagrangian_x(x_k, l_k) - lagrangian_x(x_k_old, l_k)
+        
         B_k = B_k - np.outer(B_k.dot(s_k), s_k).dot(B_k)/(s_k.T.dot(B_k).dot(s_k)) + np.outer(y_k, y_k)/np.dot(y_k, y_k)
         
-        print('x = ', x)
+        print('x_k = ', x_k)
+        print('l_k = ', l_k)
     
     return x_k
 
@@ -121,14 +153,20 @@ if __name__ == "__main__":
     c = np.array([.0, .0])
 
     
-    lambda_l = 1E0
+    lambda_l = 1E-3
     lambda_h = 1E3
     
     #Initialize with feasible initial point
-    x = np.zeros(int(N*(N+1)/2 + N))
-    x[0] = (lambda_l + lambda_h)/2
-    x[1] = 0
-    x[2] = (lambda_l + lambda_h)/2
+#    x = np.zeros(int(N*(N+1)/2 + N))
+#    x[0] = (lambda_l + lambda_h)/2
+#    x[1] = 0
+#    x[2] = (lambda_l + lambda_h)/2
+    
+    x = 1+np.random.rand(5)
+    while((ce.cf(x) < 0).any()):
+        x = 1+np.random.randn(5)
+    print("inital feasible point found ...")
+    print("x_0 = {}".format(x))
     
     
     f, g = ce.setmodelzw(z, w, x)
