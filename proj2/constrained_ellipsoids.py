@@ -247,6 +247,8 @@ def test_barrier():
     w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
+   # lambda_l = 1E1
+   # lambda_h = 1E3
     #Choose random lambda to test robustness of algorithm.
     lambda_l = np.exp(-5 + 10*np.random.rand())
     lambda_h = lambda_l + np.exp(10*np.random.rand())
@@ -291,7 +293,7 @@ def test_barrier():
 #        feasible_iter += 1
     print("Found initial feasible point")
     
-    #Call barrier
+    #Call barriers
     x1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)  
 
     #NOTE
