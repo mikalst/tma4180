@@ -256,8 +256,9 @@ def test_barrier():
 #    lambda_h = 1.41E01
     
 #    If the span becomes really small we do not get convergence.
-    lambda_l = 6.45E01
-    lambda_h = 6.80E01
+    lambda_l = 1E8
+    lambda_h = 1E9
+
 
     print("Running barrier with,\n", 
           "ll = {:.2E},\nlh = {:.2E},\n".format(lambda_l, lambda_h),
@@ -292,19 +293,21 @@ def test_barrier():
     
     #Call barrier
     x1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)  
+
     #NOTE
     #Anton advised to check that the approximation of the Hessian in BFGS is good.
     # Check the minimum and maxium eigenvalues 
     
     #Compare with the Scipy SLQP
-    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+#    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+#    print(x2)
 
     #Compare with unconstrained solution, BFGS
-    x3_unconstrained, it3, err3 = sm.bfgs(f, g, x)
+    x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
     
     plt.scatter(z[:, 0], z[:, 1], c=color)
     plot(x1, z, color, 'purple', 'Log-barrier')
-    plot(x2.x, z, color, 'yellow', 'scipy')
+#    plot(x2.x, z, color, 'yellow', 'scipy')
     plot(x3_unconstrained, z, color, 'blue', 'unconstrained BFGS')
     
     return x
