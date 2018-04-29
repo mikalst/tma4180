@@ -84,7 +84,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
         
         print('Outer iteration {}'.format(k), end = ", ")
         
-        x1, it1, err1 = sm.bfgs(p, g_p, x1, TOL = 1/k**2, max_iter = 100)    
+        x1, it1, err1 = sm.bfgs(p, g_p, x1, TOL = 1/k**2, max_iter = 50)    
 #        x1, it1, err1 = sm.steepest_descent(p, g_p, x0, TOL = 1/k**2)
 #        x1, it1, err1 = sm.fletcher_reeves(p, g_p, x0, TOL = 1/k**2)
         
@@ -103,5 +103,5 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
         
         k += 1
 
-        if k == 21:
+        if k == 31:
             return barrier(x0, 10*mu0, cf, cg, l_eigen, f, g)
