@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize as minimize
 
 import search_methods as sm
-import sqp_methods as sqp
+#import sqp_methods as sqp
 import barrier_methods as bm
 
 
@@ -143,7 +143,7 @@ def constraint_grad(x):
     return 
 
 
-def setmodelzw(z, w, x):
+def setmodelzw(z, w):
     f = lambda x: F(z, w, x)
     g = lambda x: G(z, w, x)
     return f, g
@@ -196,12 +196,17 @@ def test_finite_difference_constraints():
     testx = 1+np.random.randn(5)
     testp = np.random.randn(5)
     
-    for eps in range(0, -8, -1):
-        lh = 1E3
-        ll = 1E0
-        eps = 10**eps
-        print("Epsiladis: ", (cf(testx + eps*testp, ll, lh) - cf(testx, ll, lh))/(eps) - cg(testx, ll).dot(testp))
-#test_finite_difference_constraints()
+    ll = 1E3 * np.random.rand()
+    lh = ll + 1E6 * np.random.rand()
+    
+    print('ll = {:.2E}, lh = {:.2E}'.format(ll, lh))
+    maxval = -np.inf
+    for eps in np.logspace(0, -9, 10):
+        err = max((cf(testx + eps*testp, ll, lh) - cf(testx, ll, lh))/(eps) - cg(testx, ll).dot(testp))
+        maxval = max(err, maxval)
+        print("Eps = {:.2E}".format(eps), '{:.5E}'.format(err))
+    if (maxval <= 1E-1):
+        print("===> F and G match")
         
         
 def scipy_constraints(lambda_l, lambda_h):
@@ -232,7 +237,7 @@ def scipy_constraints(lambda_l, lambda_h):
 
 
 def test_barrier():
-    nz = 500
+    nz = 50
     N = 2
     z, w = generate_points(nz, N)
     mu0 = 2
@@ -242,28 +247,62 @@ def test_barrier():
     w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
-    lambda_l = 1E1
-    lambda_h = 1E3
+   # lambda_l = 1E1
+   # lambda_h = 1E3
+    #Choose random lambda to test robustness of algorithm.
+    lambda_l = np.exp(-5 + 10*np.random.rand())
+    lambda_h = lambda_l + np.exp(10*np.random.rand())
     
-    #Initialize with feasible initial point
+    #Collect challenging lambdas here for testing
+#    lambda_l = 1.09E01
+#    lambda_h = 1.41E01
+    
+#    If the span becomes really small we do not get convergence.
+    #lambda_l = 6.45E01
+    #lambda_h = 6.80E01
+
+    print("Running barrier with,\n", 
+          "ll = {:.2E},\nlh = {:.2E},\n".format(lambda_l, lambda_h),
+          "nz = {}".format(nz), sep = "")
+    
+    #Reduce function, gradient, constraint vector and constraint jacobi matrix
+    # to 1 variable for call simplicity
+    constraint =      lambda x: cf(x, lambda_l, lambda_h)
+    constraint_grad = lambda x: cg(x, lambda_l)
+    f, g = setmodelzw(z, w)
+    
+    #Initialize with feasible initial point, see alternative approach in comment
+    # below
     x = np.zeros(int(N*(N+1)/2 + N))
     x[0] = (lambda_l + lambda_h)/2
     x[1] = 0
     x[2] = (lambda_l + lambda_h)/2
+
+#    feasible_iter = 0
+#    while True:
+#        x = 1+np.random.rand(int(N*(N+1)/2 + N))
+#        if (constraint(x) > 0).all():
+#            break
+#        elif (feasible_iter == 1000):
+#            x = np.zeros(int(N*(N+1)/2 + N))
+#            x[0] = (lambda_l + lambda_h)/2
+#            x[1] = 0
+#            x[2] = (lambda_l + lambda_h)/2
+#            break
+#        feasible_iter += 1
+    print("Found initial feasible point")
     
-    constraint =      lambda x: cf(x, lambda_l, lambda_h)
-    constraint_grad = lambda x: cg(x, lambda_l)
+    #Call barriers
+    x1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)  
+    #NOTE
+    #Anton advised to check that the approximation of the Hessian in BFGS is good.
+    # Check the minimum and maxium eigenvalues 
     
-    f, g = setmodelzw(z, w, x)
-    
-    x1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)
-    
-    print('Final x = {}'.format(x))
-    
-    
+    #Compare with the Scipy SLQP
     x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+
+    #Compare with unconstrained solution, BFGS
     x3_unconstrained, it3, err3 = sm.bfgs(f, g, x)
-    
     
     plt.scatter(z[:, 0], z[:, 1], c=color)
     plot(x1, z, color, 'purple', 'Log-barrier')
@@ -276,3 +315,4 @@ def test_barrier():
 
 if __name__ == "__main__":
     test_barrier()
+#    test_finite_difference_constraints()
