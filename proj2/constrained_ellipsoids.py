@@ -237,7 +237,7 @@ def scipy_constraints(lambda_l, lambda_h):
 
 
 def test_barrier():
-    nz = 50
+    nz = 100
     N = 2
     z, w = generate_points(nz, N)
     mu0 = 1E0
@@ -248,8 +248,8 @@ def test_barrier():
     color = [['green', 0, 'red'][1-i] for i in w]
     
     #Choose random lambda to test robustness of algorithm.
-    lambda_l = np.exp(-5 + 10*np.random.rand())
-    lambda_h = lambda_l + np.exp(10*np.random.rand())
+    #lambda_l = np.exp(-5 + 10*np.random.rand())
+    #lambda_h = lambda_l + np.exp(10*np.random.rand())
     
 #    If the span becomes really small we do not get convergence.
     lambda_l = 1E-3
