@@ -51,7 +51,7 @@ def xTm(x):
             ind = k - int((n-i)*(n-i+1)/2) + j-i
             A[i, j] = x[ind]
             A[j, i] = x[ind]
-    c = x[k:]# c can also be b but it requires no different implementation
+    c = x[k:]
     return A, c
 
 
@@ -240,26 +240,20 @@ def test_barrier():
     nz = 50
     N = 2
     z, w = generate_points(nz, N)
-    mu0 = 2
+    mu0 = 1E0
     
     A = np.array([[1, -10], [-10, 1]])
     c = np.array([.0, .0])
     w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
-   # lambda_l = 1E1
-   # lambda_h = 1E3
     #Choose random lambda to test robustness of algorithm.
     lambda_l = np.exp(-5 + 10*np.random.rand())
     lambda_h = lambda_l + np.exp(10*np.random.rand())
     
-    #Collect challenging lambdas here for testing
-#    lambda_l = 1.09E01
-#    lambda_h = 1.41E01
-    
 #    If the span becomes really small we do not get convergence.
-    lambda_l = 1E8
-    lambda_h = 1E9
+    lambda_l = 1E-3
+    lambda_h = 1E5
 
 
     print("Running barrier with,\n", 
@@ -278,19 +272,6 @@ def test_barrier():
     x[0] = (lambda_l + lambda_h)/2
     x[1] = 0
     x[2] = (lambda_l + lambda_h)/2
-
-#    feasible_iter = 0
-#    while True:
-#        x = 1+np.random.rand(int(N*(N+1)/2 + N))
-#        if (constraint(x) > 0).all():
-#            break
-#        elif (feasible_iter == 1000):
-#            x = np.zeros(int(N*(N+1)/2 + N))
-#            x[0] = (lambda_l + lambda_h)/2
-#            x[1] = 0
-#            x[2] = (lambda_l + lambda_h)/2
-#            break
-#        feasible_iter += 1
     print("Found initial feasible point")
     
     #Call barriers
@@ -302,7 +283,7 @@ def test_barrier():
     
     #Compare with the Scipy SLQP
 #    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
-#    print(x2)
+#    print("Scipy succeeded:", x2.success)
 
     #Compare with unconstrained solution, BFGS
     x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
