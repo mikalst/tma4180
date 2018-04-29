@@ -237,7 +237,7 @@ def scipy_constraints(lambda_l, lambda_h):
 
 
 def test_barrier():
-    nz = 50
+    nz = 100
     N = 2
     z, w = generate_points(nz, N)
     mu0 = 2
@@ -247,11 +247,11 @@ def test_barrier():
     w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
-   # lambda_l = 1E1
-   # lambda_h = 1E3
+    lambda_l = 1E2
+    lambda_h = 1E3
     #Choose random lambda to test robustness of algorithm.
-    lambda_l = np.exp(-5 + 10*np.random.rand())
-    lambda_h = lambda_l + np.exp(10*np.random.rand())
+    #lambda_l = np.exp(-5 + 10*np.random.rand())
+    #lambda_h = lambda_l + np.exp(10*np.random.rand())
     
     #Collect challenging lambdas here for testing
 #    lambda_l = 1.09E01
