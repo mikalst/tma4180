@@ -58,7 +58,7 @@ def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
         else:
             g_j = g(x_k + alpha_j * p_k)
             if np.abs(g_j.dot(p_k)) <= -c2*g0.dot(p_k):
-#                print("Terminate zoom")
+#                print(alpha_j)
                 return x_k + alpha_j * p_k, True
             if g_j.dot(p_k)*(alpha_hi - alpha_lo) >= 0:
 #                print("No curvature")
@@ -68,7 +68,7 @@ def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
 
 def linesearch(f, g, x_k, p_k, c1, c2, wolfe='s'):
     """Linesearch as implemented in [1, p.60] modified by the addition of a boolean value
-    indicating  the convergence of the algorithm."""
+    indicating the convergence of the algorithm."""
 
     alpha_0 = 0
     alpha_max = np.inf
@@ -80,6 +80,10 @@ def linesearch(f, g, x_k, p_k, c1, c2, wolfe='s'):
     f_last = f0
     alpha_last = alpha_0
     i = 1
+    
+    #Check if p_k is a valid direction. 
+    if not(g(x_k).dot(p_k) < 0):
+        return x_k, False
     
     while True:
         
@@ -172,6 +176,9 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999):
 
         rho = 1/y.dot(s)
         H_k = (I - rho*np.outer(s, y))@H_k@(I - rho*np.outer(y, s)) + rho*np.outer(s, s)
+        
+    if np.linalg.norm(g(x_k)) == np.nan:
+        return steepest_descent(f, g, x, TOL, max_iter)
     
     #print("f(x_{}) = {}".format(iterations, f(x_k)))
     print('BFGS iterations: {}'.format(iterations))
