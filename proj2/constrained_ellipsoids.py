@@ -242,7 +242,7 @@ def test_barrier():
     w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
-    lambda_l = 1E0
+    lambda_l = 1E1
     lambda_h = 1E3
     
     #Initialize with feasible initial point
