@@ -43,7 +43,7 @@ def check_KKT(x, mult, l, cf, g):
     """Check for KKT as a stopping criterion"""
 
     # set a tolerance for checking KKT 
-    TOL = 10E-3
+    TOL = 10E-6
     
     if np.linalg.norm(g(x) - np.array((mult[0] - mult[1] + mult[4]/2*np.sqrt(x[2]/x[1]),
                              mult[2] - mult[3] + mult[4]/2*np.sqrt(x[0]/x[2]), 
@@ -77,18 +77,16 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
     # Testing finite differences.
 #    test_finite_difference_penalty(x1, mu, f, g, cf, cg) 
     
-    np.seterr('ignore')
+#    np.seterr('ignore')
     
     print("Starting barrier...")
     while True:
         
         print('Outer iteration {}'.format(k), end = ", ")
         
-        x1, it1, err1 = sm.bfgs(p, g_p, x1, TOL = 1/k**2, max_iter = 50)    
-#        x1, it1, err1 = sm.steepest_descent(p, g_p, x0, TOL = 1/k**2)
-#        x1, it1, err1 = sm.fletcher_reeves(p, g_p, x0, TOL = 1/k**2)
+        x1, it1, err1 = sm.bfgs(p, g_p, x1, TOL = 1/k**2, max_iter = 100, linesearch_method = "bt")
         
-        # approximate lagrange multipliers
+        # Approximate lagrange multipliers
         lagrange = mu/cf(x1)
         
         # KKT convergence test
@@ -96,7 +94,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
             print("KKT sufficiently satisfied,", 'x = {}'.format(x1), sep = "\n")
             return x1
         
-        # update penalty parameter
+        # Update penalty parameter
         mu = 1/2*mu
         p =   lambda x: P(x, mu, cf, f)
         g_p = lambda x: grad_P(x, mu, cf, cg, g)
@@ -104,4 +102,5 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g):
         k += 1
 
         if k == 31:
-            return barrier(x0, 10*mu0, cf, cg, l_eigen, f, g)
+            print("Barrier did not converge within {} steps".format(k))
+            return x1
