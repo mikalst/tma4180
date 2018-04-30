@@ -69,8 +69,8 @@ def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
         
         alpha_j = (alpha_lo + alpha_hi)/2
 
-        if (np.abs(alpha_lo - alpha_hi) < 1E-16):
-            return x_k + alpha_j * p_k, False        
+        if (np.abs(alpha_lo - alpha_hi) == 0.):
+            return x_k + alpha_j * p_k, False
         
         f_j = f(x_k + alpha_j*p_k)
         
@@ -244,8 +244,7 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999, linesearch_method = "ww"):
             break
         
         #Reset to steepest descent either if our chosen direction is not a direction
-        # of descent or if our linesearch algorithms do not converge. 
-        if (g_k.dot(p_k) / (np.linalg.norm(g_k) * np.linalg.norm(p_k))) < 1e-10: #or not(ls_success)
+        if (g_k.dot(p_k) / (np.linalg.norm(g_k) * np.linalg.norm(p_k))) < 1e-10:
             H_k = I
             continue
  
