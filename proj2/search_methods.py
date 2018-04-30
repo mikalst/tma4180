@@ -8,13 +8,27 @@ Implementation of:
     steepest descent
     bfgs
     fletcher-reeves
-
 """
+
 import numpy as np
 
 
 def backtracking_linesearch(f, g, x_k, p_k, g_k):
-    """Backtracking linesearch as implemented in [1, p. 37]."""
+    """Backtracking linesearch as implemented in [1, p. 37].
+    
+    Parameters
+    ----------
+    f : objective, callable.
+    g : gradient, callable.
+    x_k : initial point.
+    p_k : direction of search.
+    g_k : gradient evaluated at inital point.
+    
+    Returns
+    ----------
+    x_k+1 : point satisfying sufficient decrease, or point at which the linesearch 
+            was terminated
+    success : Boolean value indicating the convergence of the linesearch."""
     
     f0 = f(x_k)
     alpha = 1
@@ -25,14 +39,28 @@ def backtracking_linesearch(f, g, x_k, p_k, g_k):
         alpha *= 0.5
         sd = f(x_k + alpha * p_k) <= f0 + c1 * alpha * g_k.T@p_k
         
-    print("Alpha", alpha)
-        
     return x_k + alpha*p_k, True
 
 
 def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
-    """Zoom as implemented in [1, p. 61] modified by the addition of a boolean value
-    indicating  the convergence of the algorithm."""
+    """Zoom as implemented in [1, p. 61].
+    
+        Parameters
+    ----------
+    f : objective, callable.
+    g : gradient, callable.
+    x_k : initial point.
+    p_k : direction of search.
+    alpha_lo: lower value of alpha.
+    alpha_hi: upper value of alpha.
+    c1 : 1st parameter of the wolfe conditions.
+    c2 : 2nd parameter of wolfe conditions. 
+    
+    Returns
+    ----------
+    x_k+1 : point satisfying strong wolfe, or point at which the linesearch 
+            was terminated
+    success : Boolean value indicating the convergence of the linesearch."""
     
     f0 = f(x_k)
     g0 = g(x_k)
@@ -67,8 +95,23 @@ def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
 
 
 def linesearch(f, g, x_k, p_k, c1, c2, wolfe='s'):
-    """Linesearch as implemented in [1, p.60] modified by the addition of a boolean value
-    indicating the convergence of the algorithm."""
+    """Linesearch as implemented in [1, p.60].
+    
+        Parameters
+    ----------
+    f : objective, callable.
+    g : gradient, callable.
+    x_k : initial point.
+    p_k : direction of search.
+    c1 : 1st parameter of the wolfe conditions.
+    c2 : 2nd parameter of wolfe conditions. 
+    wolfe : specification of wolfe conditions, {s, w}
+    
+    Returns
+    ----------
+    x_k+1 : point satisfying strong wolfe, or point at which the linesearch 
+            was terminated
+    success : Boolean value indicating the convergence of the linesearch."""
 
     alpha_0 = 0
     alpha_max = np.inf
@@ -114,6 +157,22 @@ def linesearch(f, g, x_k, p_k, c1, c2, wolfe='s'):
 
 
 def steepest_descent(f, g, x, TOL = 1e-3, max_iter = 9999):
+    """Steepest descent algorithm for unconstrained minimization.
+    
+    Parameters
+    ----------
+    f : objective, callable.
+    g : gradient, callable.
+    x_k : initial point.
+    TOL : maximum Euclidian-norm of gradient at local minimum.
+    max_iter : maximum number of iterations.
+    
+    Returns
+    ----------
+    x* : obtained minimum.
+    iterations : iterations used.
+    f(x_k*) : value of objective at local minimum."""
+    
     print("SD \nf(x_0) = ", f(x))
 
     g_k = g(x)
@@ -142,7 +201,24 @@ def steepest_descent(f, g, x, TOL = 1e-3, max_iter = 9999):
     return x_k, iterations, f(x_k)
 
 
-def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999):
+def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999, linesearch_method = "ww"):
+    """BFGS algorithm for unconstrained minimization.
+    
+    Parameters
+    ----------
+    f : objective, callable.
+    g : gradient, callable.
+    x : initial point.
+    TOL : maximum Euclidian-norm of gradient at local minimum.
+    max_iter : maximum number of iterations.
+    linesearch_method : method to be used in linesearch. {bt, ww}
+    
+    Returns
+    ----------
+    x* : obtained minimum.
+    iterations : iterations used.
+    f(x_k*) : value of objective at local minimum."""
+    
     #print("BFGS \nf(x_0) = ", f(x))
     
     I = np.identity(len(x))
@@ -156,7 +232,10 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999):
         g0 = g_k    
         p_k = - H_k@g_k
         
-        x_k, ls_success = linesearch(f, g, x_k, p_k, 1E-4, 0.9, wolfe='w')
+        if linesearch_method == "bt":
+            x_k, ls_success = backtracking_linesearch(f, g, x_k, p_k, g_k)
+        elif linesearch_method == "ww":
+            x_k, ls_success = linesearch(f, g, x_k, p_k, 1E-4, 0.9, wolfe='w')
         
         g_k = g(x_k)
         
@@ -166,19 +245,21 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999):
         
         #Reset to steepest descent either if our chosen direction is not a direction
         # of descent or if our linesearch algorithms do not converge. 
-        if (g_k.dot(p_k) / (np.linalg.norm(g_k) * np.linalg.norm(p_k))) < 1e-10 or not(ls_success):
+        if (g_k.dot(p_k) / (np.linalg.norm(g_k) * np.linalg.norm(p_k))) < 1e-10: #or not(ls_success)
             H_k = I
             continue
  
         y = g_k - g0; 
-        s = x_k - x0; 
-        assert(y.dot(s) > 0)
-
-        rho = 1/y.dot(s)
-        H_k = (I - rho*np.outer(s, y))@H_k@(I - rho*np.outer(y, s)) + rho*np.outer(s, s)
+        s = x_k - x0;
         
-    if np.linalg.norm(g(x_k)) == np.nan:
-        return steepest_descent(f, g, x, TOL, max_iter)
+        if (y.dot(s) <= 0):
+            H_k = H_k
+        else:
+            rho = 1/y.dot(s)
+            H_k = (I - rho*np.outer(s, y))@H_k@(I - rho*np.outer(y, s)) + rho*np.outer(s, s)
+        
+#    if np.linalg.norm(g(x_k)) == np.nan:
+#        return steepest_descent(f, g, x, TOL, max_iter)
     
     #print("f(x_{}) = {}".format(iterations, f(x_k)))
     print('BFGS iterations: {}'.format(iterations))
@@ -186,6 +267,22 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999):
 
 
 def fletcher_reeves(f, g, x, TOL = 1e-3, max_iter = 9999):
+    """Fletcher-Reeves algorithm for unconstrained minimization.
+    
+    Parameters
+    ----------
+    f : objective, callable.
+    g : gradient, callable.
+    x : initial point.
+    TOL : maximum Euclidian-norm of gradient at local minimum.
+    max_iter : maximum number of iterations.
+    
+    Returns
+    ----------
+    x* : obtained minimum.
+    iterations : iterations used.
+    f(x_k*) : value of objective at local minimum."""
+    
     print("FR \nf(x_0) = ", f(x))
     x0 = x
     g0 = g(x)
