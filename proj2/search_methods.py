@@ -38,7 +38,11 @@ def backtracking_linesearch(f, g, x_k, p_k, g_k):
     while(not sd):
         alpha *= 0.5
         sd = f(x_k + alpha * p_k) <= f0 + c1 * alpha * g_k.T@p_k
-        
+    
+    # If alpha becomes negligible, return False
+    if (np.max(np.abs(alpha * p_k / x_k)) < np.finfo(np.float64).min):
+        return x_k, False
+    
     return x_k + alpha*p_k, True
 
 
@@ -74,23 +78,20 @@ def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
         
         f_j = f(x_k + alpha_j*p_k)
         
-#        print(alpha_lo, alpha_j, alpha_hi)
-#        print(g0.dot(p_k), alpha_j, f_j - f0)
-        
-#        print("1",f_j > f0 + c1*alpha_j*g0.dot(p_k))
-#        print("2", f_j >= f(x_k + alpha_lo * p_k))
+        # Check if not sufficient decrease
         if (f_j > f0 + c1*alpha_j*g0.dot(p_k)) or f_j >= f(x_k + alpha_lo * p_k):
-#            print("No sufficient decrease")
             alpha_hi = alpha_j
-#            print(ah)
+
         else:
             g_j = g(x_k + alpha_j * p_k)
+            
+            # Check curvature
             if np.abs(g_j.dot(p_k)) <= -c2*g0.dot(p_k):
-#                print(alpha_j)
                 return x_k + alpha_j * p_k, True
+            
             if g_j.dot(p_k)*(alpha_hi - alpha_lo) >= 0:
-#                print("No curvature")
                 alpha_hi = alpha_lo
+                
             alpha_lo = alpha_j
 
 
@@ -223,6 +224,7 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999, linesearch_method = "ww"):
     
     I = np.identity(len(x))
     iterations = 1
+    reset_to_SD_counter = 0
     x_k = x
     g_k = g(x)
     H_k =  I
@@ -244,7 +246,8 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999, linesearch_method = "ww"):
             break
         
         #Reset to steepest descent either if our chosen direction is not a direction
-        if (g_k.dot(p_k) / (np.linalg.norm(g_k) * np.linalg.norm(p_k))) < 1e-10:
+        if not(ls_success): #(g_k.dot(p_k) / (np.linalg.norm(g_k) * np.linalg.norm(p_k))) < 1e-10
+            reset_to_SD_counter += 1
             H_k = I
             continue
  
@@ -261,7 +264,7 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999, linesearch_method = "ww"):
 #        return steepest_descent(f, g, x, TOL, max_iter)
     
     #print("f(x_{}) = {}".format(iterations, f(x_k)))
-    print('BFGS iterations: {}'.format(iterations))
+    print('BFGS iterations: {}'.format(iterations), 'reset SD: {}'.format(reset_to_SD_counter))
     return x_k, iterations, f(x_k)
 
 
