@@ -240,7 +240,7 @@ def test_barrier():
     nz = 100
     N = 2
     z, w = generate_points(nz, N)
-    mu0 = 1E0
+    mu0 = 2
     
     A = np.array([[1, -10], [-10, 1]])
     c = np.array([.0, .0])
@@ -252,8 +252,8 @@ def test_barrier():
     #lambda_h = lambda_l + np.exp(10*np.random.rand())
     
 #    If the span becomes really small we do not get convergence.
-    lambda_l = 1E-3
-    lambda_h = 1E5
+    lambda_l = 1E15
+    lambda_h = 1E16
 
 
     print("Running barrier with,\n", 
@@ -282,15 +282,15 @@ def test_barrier():
     # Check the minimum and maxium eigenvalues 
     
     #Compare with the Scipy SLQP
-#    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
-#    print("Scipy succeeded:", x2.success)
+    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+    print("Scipy succeeded:", x2.success)
 
     #Compare with unconstrained solution, BFGS
     x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
     
     plt.scatter(z[:, 0], z[:, 1], c=color)
     plot(x1, z, color, 'purple', 'Log-barrier')
-#    plot(x2.x, z, color, 'yellow', 'scipy')
+    plot(x2.x, z, color, 'yellow', 'scipy')
     plot(x3_unconstrained, z, color, 'blue', 'unconstrained BFGS')
     
     return x
