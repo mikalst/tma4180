@@ -7,7 +7,6 @@ Created on Wed Feb 21 12:21:45 2018
 """
 
 import numpy as np
-import numpy.random
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize as minimize
 
@@ -16,19 +15,42 @@ import search_methods as sm
 import barrier_methods as bm
 
 
-def find_weights(zz, A, c):
+def generate_points(num):
+    z = 1.5*(2*np.random.rand(num, 2) - np.ones((2, )))
+    w = np.random.choice([-1, 1], size=num)    
+    return z, w
+
+
+def find_weights(zz, x, some_error = False):
+    A, c = xTm(x)
     w = np.zeros(len(zz), dtype = np.int)
     for i, z in enumerate(zz):
         if np.dot(z, A).dot(z) + c.dot(z) <= 1:
             w[i] = 1
         else:
             w[i] = -1
+    
+    if some_error:
+        for i, w_i in enumerate(w):
+            if (np.random.rand() > 0.90):
+                w[i] *= -1
+            
     return w
 
 
-def generate_points(num, dim=2):
-    z = 1.5*(2*np.random.rand(num, dim) - np.ones((dim, )))
-    w = np.random.choice([-1, 1], size=num)
+def generate_square(num, some_error = False):
+    z = 1.5*(2*np.random.rand(num, 2) - np.ones((2, )))
+    w = np.zeros((num, ))
+    for i, zz in enumerate(z):
+        if np.max(np.abs(zz)) <= 1:
+            w[i] = 1
+        else:
+            w[i] = -1
+    if some_error:
+        for i, w_i in enumerate(w):
+            if (np.random.rand() > 0.90):
+                w[i] *= -1
+            
     return z, w
 
 
@@ -149,7 +171,7 @@ def setmodelzw(z, w):
     return f, g
 
 
-def plot(x, z, pointcol, color='r', name='default'):
+def plot(x, z, pointcol, color='r', name='default', alpha = 1):
     A, c = xTm(x)
       
     points  = 150
@@ -162,12 +184,12 @@ def plot(x, z, pointcol, color='r', name='default'):
             zi = np.array([X[i, j], Y[i, j]])
             V[i, j] = np.dot(zi, A).dot(zi) + c.dot(zi)
     
-    CS = plt.contour(X, Y, V, levels=[1], colors=color)
+    CS = plt.contour(X, Y, V, levels=[1], colors=color, alpha = alpha)
     fmt = {}
     strs = [name]
     for l, s in zip(CS.levels, strs):
         fmt[l] = s
-    plt.clabel(CS, CS.levels[::2], inline=True, fmt=fmt, fontsize=10)
+    plt.clabel(CS, CS.levels[::2], inline=True, fmt=fmt, fontsize=12)
     
     
 def cf(x, l, h):
@@ -238,23 +260,18 @@ def scipy_constraints(lambda_l, lambda_h):
 
 def test_barrier():
     nz = 100
-    N = 2
-    z, w = generate_points(nz, N)
+    z, w = generate_points(nz)
     mu0 = 2
     
-    A = np.array([[1, -10], [-10, 1]])
-    c = np.array([.0, .0])
-    w = find_weights(z, A, c)
     color = [['green', 0, 'red'][1-i] for i in w]
     
     #Choose random lambda to test robustness of algorithm.
-    #lambda_l = np.exp(-5 + 10*np.random.rand())
-    #lambda_h = lambda_l + np.exp(10*np.random.rand())
+#    lambda_l = np.exp(-6 + 12*np.random.rand())
+#    lambda_h = lambda_l + np.exp(-6 + 12*np.random.rand())
     
 #    If the span becomes really small we do not get convergence.
-    lambda_l = 1E15
-    lambda_h = 1E16
-
+    lambda_l = 1E1
+    lambda_h = 1E2
 
     print("Running barrier with,\n", 
           "ll = {:.2E},\nlh = {:.2E},\n".format(lambda_l, lambda_h),
@@ -268,30 +285,103 @@ def test_barrier():
     
     #Initialize with feasible initial point, see alternative approach in comment
     # below
-    x = np.zeros(int(N*(N+1)/2 + N))
+    x = np.zeros(5)
     x[0] = (lambda_l + lambda_h)/2
     x[1] = 0
     x[2] = (lambda_l + lambda_h)/2
     print("Found initial feasible point")
     
     #Call barriers
-    x1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)  
+    x1, it1, err1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g)  
 
     #NOTE
     #Anton advised to check that the approximation of the Hessian in BFGS is good.
     # Check the minimum and maxium eigenvalues 
     
     #Compare with the Scipy SLQP
-    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
-    print("Scipy succeeded:", x2.success)
+#    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+#    print("Scipy succeeded:", x2.success)
 
     #Compare with unconstrained solution, BFGS
     x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
     
+    plt.title(r"$\lambda = [{:.2E}, {:.2E}]$, LB=({}, {:.2E})".format(lambda_l, lambda_h, it1, err1), fontsize = 11.5)
     plt.scatter(z[:, 0], z[:, 1], c=color)
+
+#    if x2.success:
+#        plot(x2.x, z, color, 'red', 'Scipy', alpha = 0.5)
+
+    plot(x1, z, color, 'purple', 'Barrier')
+    plot(x3_unconstrained, z, color, 'blue', 'BFGS')
+    plt.savefig("figures/randompoints_ll{:.2E}_lh{:.2E}.pdf".format(lambda_l, lambda_h))
+    
+    return x
+
+
+def barrier_on_set():
+    nz = 40
+    z, w = generate_points(nz)
+    mu0 = 2
+
+    color = [['green', 0, 'red'][1-i] for i in w]
+    
+    #Choose random lambda to test robustness of algorithm.
+    lambda_l = np.exp(-6 + 12*np.random.rand())
+    lambda_h = lambda_l + np.exp(-6 + 12*np.random.rand())
+    
+    print("Running barrier with,\n", 
+          "ll = {:.2E},\nlh = {:.2E},\n".format(lambda_l, lambda_h),
+          "nz = {}".format(nz), sep = "")
+    
+    #Reduce constraint vector and constraint jacobi matrix to 1 variable
+    constraint =      lambda x: cf(x, lambda_l, lambda_h)
+    constraint_grad = lambda x: cg(x, lambda_l)
+    
+    #Find set that the weights can be modelled after
+    x0 = np.random.rand(5)
+    while (constraint(x0) < 0).any():
+        x0[:3] = np.exp(-1 + 3*np.random.rand(3))
+        x0[3:] = 0
+    print(x0)
+    print("Found set")
+    w = find_weights(z, x0, False)
+    
+    #Set color of points
+    color = [['green', 0, 'red'][1-i] for i in w]
+    
+    #Reduce objective and gradient to 1 variable
+    f, g = setmodelzw(z, w)
+    
+    #Initialize with feasible initial point, see alternative approach in comment
+    # below
+    x = np.zeros(5)
+    x[0] = (lambda_l + lambda_h)/2
+    x[1] = 0
+    x[2] = (lambda_l + lambda_h)/2
+    print("Found initial feasible point")
+    
+    #Call barrier
+    x1, it1, err1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g, TOL = 1E-5)  
+
+    #NOTE
+    #Anton advised to check that the approximation of the Hessian in BFGS is good.
+    # Check the minimum and maxium eigenvalues 
+    
+    #Compare with the Scipy SLQP
+#    x2 = minimize(f, x, jac=g, method = 'SLSQP', constraints = scipy_constraints(lambda_l, lambda_h))
+
+    #Compare with unconstrained solution, BFGS
+    x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
+    
+    plt.title(r"$\lambda = [{:.2E}, {:.2E}]$, LB=({}, {:.2E})".format(lambda_l, lambda_h, it1, err1), fontsize = 11.5)
+    plt.scatter(z[:, 0], z[:, 1], c=color)
+    plot(x0, z, color, 'orange', 'Hidden set')
+#    if x2.success:
+#        plot(x2.x, z, color, 'yellow', 'scipy', alpha = 0.7)
     plot(x1, z, color, 'purple', 'Log-barrier')
-    plot(x2.x, z, color, 'yellow', 'scipy')
     plot(x3_unconstrained, z, color, 'blue', 'unconstrained BFGS')
+
+    plt.savefig("figures/randomset_ll{:.2E}_lh{:.2E}.pdf".format(lambda_l, lambda_h))
     
     return x
 
@@ -299,4 +389,5 @@ def test_barrier():
 
 if __name__ == "__main__":
     test_barrier()
+#    barrier_on_set()
 #    test_finite_difference_constraints()
