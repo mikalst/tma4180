@@ -5,7 +5,6 @@ import numpy as np
 import search_methods as sm
 
 
-
 def P(x, mu, con, f):
     """Log-barrier function"""
     if not((con(x) > 0).all()):
@@ -23,6 +22,7 @@ def grad_P(x, mu, con, con_gr, g):
 
 
 def test_finite_difference_penalty(x1, mu, f, g, cf, cg):
+    
     np.random.seed()
     testp = 0.01*np.random.randn(5)
         
@@ -40,11 +40,13 @@ def test_finite_difference_penalty(x1, mu, f, g, cf, cg):
 
 
 def check_KKT(x, mult, l, cf, g, TOL):
-    """Check for KKT as a stopping criterion"""
+    """Check for KKT as a stopping criterion with the given tolerance."""
     
-    if np.linalg.norm(g(x) - np.array((mult[0] - mult[1] + mult[4]/2*np.sqrt(x[2]/x[1]),
+    violation = np.linalg.norm(g(x) - np.array((mult[0] - mult[1] + mult[4]/2*np.sqrt(x[2]/x[1]),
                              mult[2] - mult[3] + mult[4]/2*np.sqrt(x[0]/x[2]), 
-                             mult[3]*x[1]/np.sqrt(l**2 + x[1]**2), 0, 0)), 2) > TOL:
+                             mult[3]*x[1]/np.sqrt(l**2 + x[1]**2), 0, 0)), 2)
+    if violation > TOL:
+#        print(violation)
         return False
     con = cf(x)
     if (con < 0).any():
@@ -98,6 +100,7 @@ def barrier(x0, mu0, cf, cg, l_eigen, f, g, TOL = 1E-5):
         
         k += 1
 
-        if k == 31:
+        if k == 101:
             print("Barrier did not converge within {} steps".format(k-1))
-            return x1, k, f(x1)
+            print(x1)
+            return x1, k-1, f(x1)
