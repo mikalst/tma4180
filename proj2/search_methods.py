@@ -40,8 +40,8 @@ def backtracking_linesearch(f, g, x_k, p_k, g_k):
         sd = f(x_k + alpha * p_k) <= f0 + c1 * alpha * g_k.T@p_k
     
     # If alpha becomes negligible, return False
-    if (np.max(np.abs(alpha * p_k / x_k)) < np.finfo(np.float64).min):
-        return x_k, False
+    if (np.max(np.abs(alpha * p_k / x_k)) < 1E-30):
+        return x_k + alpha*p_k, False
     
     return x_k + alpha*p_k, True
 
@@ -236,6 +236,7 @@ def bfgs(f, g, x, TOL = 1e-3, max_iter = 9999, linesearch_method = "ww"):
         
         if linesearch_method == "bt":
             x_k, ls_success = backtracking_linesearch(f, g, x_k, p_k, g_k)
+            
         elif linesearch_method == "ww":
             x_k, ls_success = linesearch(f, g, x_k, p_k, 1E-4, 0.9, wolfe='w')
         
