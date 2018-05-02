@@ -456,34 +456,34 @@ def barrier_square_set():
     plt.savefig("figures/randomset_ll{:.2E}_lh{:.2E}.pdf".format(lambda_l, lambda_h))
     plt.show()
     
-#    lambda_l = 1E2
-#    lambda_h = 1E3
-#    
-#    constraint =      lambda x: cf(x, lambda_l, lambda_h)
-#    constraint_grad = lambda x: cg(x, lambda_l)
-#    f, g = setmodelzw(z, w)
-#    
-#    #Initialize with feasible initial point
-#    # below
-#    x = np.zeros(5)
-#    x[0] = (lambda_l + lambda_h)/2
-#    x[1] = 0
-#    x[2] = (lambda_l + lambda_h)/2
-#    print("Found initial feasible point")
-#    
-#    #Call barriers
-#    x1, it1, err1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g, TOL = 1E-5)  
-#
-#    #Compare with unconstrained solution, BFGS
-#    x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
-#    
-#    plt.title(r"$\lambda = [{:.2E}, {:.2E}]$, LB=({}, {:.2E})".format(lambda_l, lambda_h, it1, f(x1)), fontsize = 10)
-#    plt.scatter(z[:, 0], z[:, 1], c=color)
-#    plot(x1, z, color, 'purple', 'Barrier')
-#    plot(x3_unconstrained, z, color, 'blue', 'BFGS')
-#    plt.plot([-1, -1], [-1, 1], [-1, 1], [1, 1], [1, 1], [-1, 1], [-1, 1], [-1, -1], color = "orange")
-#    plt.savefig("figures/randompoints_ll{:.2E}_lh{:.2E}.pdf".format(lambda_l, lambda_h))
-#    plt.show()
+    lambda_l = 1E2
+    lambda_h = 1E3
+    
+    constraint =      lambda x: cf(x, lambda_l, lambda_h)
+    constraint_grad = lambda x: cg(x, lambda_l)
+    f, g = setmodelzw(z, w)
+    
+    #Initialize with feasible initial point
+    # below
+    x = np.zeros(5)
+    x[0] = (lambda_l + lambda_h)/2
+    x[1] = 0
+    x[2] = (lambda_l + lambda_h)/2
+    print("Found initial feasible point")
+    
+    #Call barriers
+    x1, it1, err1 = bm.barrier(x, mu0, constraint, constraint_grad, lambda_l, f, g, TOL = 1E-5)  
+
+    #Compare with unconstrained solution, BFGS
+    x3_unconstrained, it3, err3 = sm.bfgs(f, g, x, max_iter = 1000)
+    
+    plt.title(r"$\lambda = [{:.2E}, {:.2E}]$, LB=({}, {:.2E})".format(lambda_l, lambda_h, it1, f(x1)), fontsize = 10)
+    plt.scatter(z[:, 0], z[:, 1], c=color)
+    plot(x1, z, color, 'purple', 'Barrier')
+    plot(x3_unconstrained, z, color, 'blue', 'BFGS')
+    plt.plot([-1, -1], [-1, 1], [-1, 1], [1, 1], [1, 1], [-1, 1], [-1, 1], [-1, -1], color = "orange")
+    plt.savefig("figures/randompoints_ll{:.2E}_lh{:.2E}.pdf".format(lambda_l, lambda_h))
+    plt.show()
     
     return x
 

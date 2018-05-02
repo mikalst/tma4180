@@ -14,7 +14,7 @@ import numpy as np
 
 
 def backtracking_linesearch(f, g, x_k, p_k, g_k):
-    """Backtracking linesearch as implemented in [1, p. 37].
+    """Backtracking linesearch
     
     Parameters
     ----------
@@ -39,15 +39,18 @@ def backtracking_linesearch(f, g, x_k, p_k, g_k):
         alpha *= 0.5
         sd = f(x_k + alpha * p_k) <= f0 + c1 * alpha * g_k.T@p_k
     
-    # If alpha becomes negligible, return False
-    if (np.max(np.abs(alpha * p_k / x_k)) < 1E-30):
+    #If increment becomes negligible, i.e. where the computation
+    # (x_k == x_k + alpha * p_k) evaluates to True. This effectively means that
+    # we are not making progress and the direction for search should reset to 
+    # steepest descent. 
+    if (np.max(np.abs(alpha * p_k / x_k)) < 2.2E-16):
         return x_k + alpha*p_k, False
     
     return x_k + alpha*p_k, True
 
 
 def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
-    """Zoom as implemented in [1, p. 61].
+    """Zoom
     
         Parameters
     ----------
@@ -96,7 +99,7 @@ def zoom(f, g, x_k, p_k, alpha_lo, alpha_hi, c1, c2):
 
 
 def linesearch(f, g, x_k, p_k, c1, c2, wolfe='s'):
-    """Linesearch as implemented in [1, p.60].
+    """Linesearch
     
         Parameters
     ----------
