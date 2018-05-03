@@ -258,8 +258,8 @@ def test_barrier():
 #    lambda_h = 1.41E01
     
 #    If the span becomes really small we do not get convergence.
-    lambda_l = 1E8
-    lambda_h = 1E9
+    lambda_l = 1E-1
+    lambda_h = 1E-0
 
 
     print("Running barrier with,\n", 
