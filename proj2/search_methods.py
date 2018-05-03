@@ -41,8 +41,8 @@ def backtracking_linesearch(f, g, x_k, p_k, g_k):
     
     #If increment becomes negligible, i.e. where the computation
     # (x_k == x_k + alpha * p_k) evaluates to True. This effectively means that
-    # we are not making progress and the direction for search should reset to 
-    # steepest descent. 
+    # we are not making progress and the direction for search should be reset 
+    # to steepest descent. 
     if (np.max(np.abs(alpha * p_k / x_k)) < 2.2E-16):
         return x_k + alpha*p_k, False
     
