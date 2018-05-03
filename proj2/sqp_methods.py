@@ -21,6 +21,10 @@ def scipy_constraints_qp(x_k):
     lambda_l = LAMBDA
     lambda_h = LAMBDB
     
+    c5 = np.array([0.5*(x_k[2]+p[2])*np.power((x_k[0]+p[0])*(x_k[2]+p[2]), -0.5),
+                                              -1*(x_k[1] + p[1])*np.power(lambda_l**2 + (x_k[1]+p[1])**2, -0.5),
+                                              0.5*(x_k[0]+p[0])*np.power((x_k[0]+p[0])*(x_k[2]+p[2]), -0.5), 0, 0])
+    
     constraint1 = {'type': 'ineq',
                    'fun': lambda p: x_k[0] + p[0] - lambda_l,
                    'jac': lambda x: np.array([1, 0, 0, 0, 0])}
