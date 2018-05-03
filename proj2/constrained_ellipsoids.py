@@ -268,13 +268,8 @@ def test_barrier():
     lambda_h = lambda_l + np.exp(-6 + 12*np.random.rand())
     
 #    If the span becomes really small we do not get convergence.
-<<<<<<< HEAD
-    lambda_l = 1E-1
-    lambda_h = 1E-0
-=======
     lambda_l = 8E-1
     lambda_h = 1E2
->>>>>>> 5b684220caf151e5df26a44513c9d021eed972e6
 
     print("Running barrier with,\n", 
           "ll = {:.2E},\nlh = {:.2E},\n".format(lambda_l, lambda_h),
